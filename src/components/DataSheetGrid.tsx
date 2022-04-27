@@ -143,15 +143,6 @@ export const DataSheetGrid = React.memo(
         listRef.current?.resetAfterIndex(0)
       }, [headerRowHeight, rowHeight])
 
-      // Default value is 1 for the border
-      const [heightDiff, setHeightDiff] = useDebounceState(1, 100)
-
-      // Height of the list (including scrollbars and borders) to display
-      const displayHeight = Math.min(
-        maxHeight,
-        headerRowHeight + data.length * rowHeight + heightDiff
-      )
-
       // Width and height of the scrollable area
       const { width, height } = useResizeDetector({
         targetRef: outerRef,
@@ -164,8 +155,6 @@ export const DataSheetGrid = React.memo(
       //   refreshRate: 100,
       // })
 
-      setHeightDiff((height ? displayHeight - Math.ceil(height) : 0))
-
       const edges = useEdges(outerRef, width, height)
 
       const {
@@ -175,6 +164,16 @@ export const DataSheetGrid = React.memo(
         columnRights,
       } = useColumnWidths(columns, width)
 
+      // Default value is 1 for the border
+      const [heightDiff, setHeightDiff] = useDebounceState(1, 100)
+
+      // Height of the list (including scrollbars and borders) to display
+      const displayHeight = Math.min(
+        maxHeight,
+        headerRowHeight + data.length * rowHeight + heightDiff
+      )
+
+      setHeightDiff((height ? displayHeight - Math.ceil(height) : 0))
       // 
 
       // x,y coordinates of the right click
@@ -2194,7 +2193,7 @@ export const DataSheetGrid = React.memo(
                 )}
                 width="100%"
                 ref={listRef}
-                height={displayHeight + ((contentWidth && width && contentWidth > width) ? 17 : 0)}
+                height={displayHeight}
                 itemCount={data.length + 1}
                 itemSize={itemSize}
                 estimatedItemSize={rowHeight}

@@ -28,10 +28,20 @@
 
 .dsg-container-full,
 .dsg-container-overflow {
-  /* border: solid 1px var(--dsg-border-color); */
-  box-shadow: 1px 0 1px var(--dsg-border-color);;
+  box-shadow: 1px 0 1px var(--dsg-border-color);
   border-top: none;
   border-left: none;
+}
+
+.dsg-container-cover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .dsg-corner-indicator {
@@ -45,14 +55,13 @@
 .dsg-table {
   width: 100%;
   height: 100%;
+  box-shadow: inset 0 1px var(--dsg-border-color);
 }
 
 .dsg-row {
   background: var(--dsg-cell-background-color);
-  /* box-shadow: 0 1px var(--dsg-border-color) inset; */
   display: flex;
   position: relative;
-  cursor: cell;
   width: 100%;
 }
 
@@ -160,6 +169,7 @@
 .dsg-active-cell,
 .dsg-selection-rect {
   position: absolute;
+  top: 0;
   border: solid var(--dsg-selection-border-width)
     var(--dsg-selection-border-color);
   box-sizing: border-box;
@@ -602,6 +612,7 @@
   transition: all var(--dsg-transition-duration);
   cursor: crosshair;
   z-index: 3;
+  pointer-events: initial;
 }
 
 .dsg-expand-rows-indicator-disabled {
