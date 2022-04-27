@@ -1,30 +1,11 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react'
-import { CellComponent, CellProps, Column } from '../types'
+import { Align, CellComponent, CellProps, Column, TextColumnOptions } from '../types'
 import cx from 'classnames'
 import { useFirstRender } from '../hooks/useFirstRender'
 
-type TextColumnOptions<T> = {
-  placeholder?: string
-  alignRight?: boolean
-  // When true, data is updated as the user types, otherwise it is only updated on blur. Default to true
-  continuousUpdates?: boolean
-  // Value to use when deleting the cell
-  deletedValue?: T
-  // Parse what the user types
-  parseUserInput?: (value: string) => T
-  // Format the value of the input when it is blurred
-  formatBlurredInput?: (value: T) => string
-  // Format the value of the input when it gets focused
-  formatInputOnFocus?: (value: T) => string
-  // Format the value when copy
-  formatForCopy?: (value: T) => string
-  // Parse the pasted value
-  parsePastedValue?: (value: string) => T
-}
-
 type TextColumnData<T> = {
   placeholder?: string
-  alignRight: boolean
+  align?: Align
   continuousUpdates: boolean
   parseUserInput: (value: string) => T
   formatBlurredInput: (value: T) => string
@@ -38,10 +19,11 @@ const TextComponent = React.memo<
     active,
     focus,
     rowData,
+    align: cellAlign,
     setRowData,
     columnData: {
       placeholder,
-      alignRight,
+      align,
       formatInputOnFocus,
       formatBlurredInput,
       parseUserInput,
@@ -50,6 +32,7 @@ const TextComponent = React.memo<
   }) => {
     const ref = useRef<HTMLInputElement>(null)
     const firstRender = useFirstRender()
+    const renderAlign = align || cellAlign
 
     // We create refs for async access so we don't have to add it to the useEffect dependencies
     const asyncRef = useRef({
@@ -92,8 +75,14 @@ const TextComponent = React.memo<
           ref.current.value = asyncRef.current.formatInputOnFocus(
             asyncRef.current.rowData
           )
-          ref.current.focus()
-          ref.current.select()
+          // 选中状态时，再次点击将取消选中并移动光标到文字末尾
+          if(ref.current === document.activeElement) {
+            const len = ref.current.value?.length || 0
+            ref.current.setSelectionRange && ref.current.setSelectionRange(len, len)
+          } else {
+            ref.current.focus()
+            ref.current.select()
+          }
         }
 
         // We immediately reset the escPressed
@@ -117,7 +106,10 @@ const TextComponent = React.memo<
               asyncRef.current.parseUserInput(ref.current.value)
             )
           }
-          ref.current.blur()
+          // 修复点击后立即失焦
+          if (Date.now() - asyncRef.current.focusedAt > 60) {
+            ref.current.blur()
+          }
         }
       }
     }, [focus])
@@ -133,7 +125,7 @@ const TextComponent = React.memo<
       <input
         // We use an uncontrolled component for better performance
         defaultValue={formatBlurredInput(rowData)}
-        className={cx('dsg-input', alignRight && 'dsg-input-align-right')}
+        className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`)}
         placeholder={active ? placeholder : undefined}
         // Important to prevent any undesired "tabbing"
         tabIndex={-1}
@@ -144,7 +136,8 @@ const TextComponent = React.memo<
         style={{ pointerEvents: focus ? 'auto' : 'none' }}
         onChange={(e) => {
           asyncRef.current.changedAt = Date.now()
-
+        }}
+        onBlur={(e) => {
           // Only update the row's value as the user types if continuousUpdates is true
           if (continuousUpdates) {
             setRowData(parseUserInput(e.target.value))
@@ -167,10 +160,10 @@ export const textColumn = createTextColumn<string | null>()
 
 export function createTextColumn<T = string | null>({
   placeholder,
-  alignRight = false,
+  align,
   continuousUpdates = true,
   deletedValue = null as unknown as T,
-  parseUserInput = (value) => (value.trim() || null) as unknown as T,
+  parseUserInput = (value) => (value?.trim() || null) as unknown as T,
   formatBlurredInput = (value) => String(value ?? ''),
   formatInputOnFocus = (value) => String(value ?? ''),
   formatForCopy = (value) => String(value ?? ''),
@@ -181,7 +174,7 @@ export function createTextColumn<T = string | null>({
     component: TextComponent as unknown as CellComponent<T, TextColumnData<T>>,
     columnData: {
       placeholder,
-      alignRight,
+      align,
       continuousUpdates,
       formatInputOnFocus,
       formatBlurredInput,

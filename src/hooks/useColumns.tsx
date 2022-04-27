@@ -17,12 +17,12 @@ export const useColumns = <T extends any>(
   stickyRightColumn?: SimpleColumn<T, any>
 ): Column<T, any, any>[] => {
   return useMemo<Column<T, any, any>[]>(() => {
+
     const partialColumns: Partial<Column<T, any, any>>[] = [
       gutterColumn === false
         ? {
             width: 0,
             minWidth: 0,
-            // eslint-disable-next-line react/display-name
             component: () => <></>,
             headerClassName: 'dsg-hidden-cell',
             cellClassName: 'dsg-hidden-cell',

@@ -68,7 +68,6 @@ export const useColumnWidths = (
     setPrevWidth(width)
 
     el.remove()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, columnsHash])
 
   return {

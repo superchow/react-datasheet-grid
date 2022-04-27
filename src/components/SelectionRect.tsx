@@ -41,9 +41,11 @@ const buildClipPath = (
 
 export const SelectionRect = React.memo(() => {
   const {
+    showSelection,
     columnWidths,
     columnRights,
     headerRowHeight,
+    columnRowHeights,
     selection,
     rowHeight,
     activeCell,
@@ -54,11 +56,17 @@ export const SelectionRect = React.memo(() => {
     contentWidth,
     edges,
     isCellDisabled,
+    isCellReadonly,
+    getActiveCellRect,
     editing,
     expandSelection,
   } = useContext(SelectionContext)
+  if (!showSelection) {
+    return <></>
+  }
 
   const activeCellIsDisabled = activeCell ? isCellDisabled(activeCell) : false
+  const activeCellIsReadonly = activeCell ? isCellReadonly(activeCell) : false
 
   const selectionIsDisabled = useMemo(() => {
     if (!selection) {
@@ -80,19 +88,35 @@ export const SelectionRect = React.memo(() => {
     return null
   }
 
-  const extraPixelV = (rowI: number): number => {
+  const extraPixelV = (rowI: number, height?: number): number => {
+    if (height) {
+      return (rowHeight * rowI + headerRowHeight + height) < viewHeight!
+        ? 1
+        : 0
+    }
     return rowI < dataLength - 1 ? 1 : 0
   }
 
   const extraPixelH = (colI: number): number => {
     return colI < columnWidths.length - (hasStickyRightColumn ? 3 : 2) ? 1 : 0
   }
+  const extraHeight = (row: number): number => {
+    if (!columnRowHeights || !columnRowHeights.length) {
+      return 0
+    }
+    if (columnRowHeights[row]) {
+      return columnRowHeights[row]
+    } else {
+      return columnRowHeights.slice(0, row).reverse().find(a => a > 0)!
+    }
+  }
 
-  const activeCellRect = activeCell && {
-    width: columnWidths[activeCell.col + 1] + extraPixelH(activeCell.col),
-    height: rowHeight + extraPixelV(activeCell.row),
-    left: columnRights[activeCell.col],
-    top: rowHeight * activeCell.row + headerRowHeight,
+  const activeClientRect = getActiveCellRect()
+  const activeCellRect = activeCell && activeClientRect && {
+    width: activeClientRect.width + extraPixelH(activeCell.col),
+    height: extraHeight(activeCell.row) + extraPixelV(activeCell.row),
+    left: activeClientRect.left,
+    top: activeClientRect.top,
   }
 
   const selectionRect = selection && {
@@ -209,11 +233,12 @@ export const SelectionRect = React.memo(() => {
           />
         </div>
       )}
-      {activeCellRect && activeCell && (
+      {activeCellRect && activeCell && !activeCellIsReadonly && (
         <div
           className={cx('dsg-active-cell', {
             'dsg-active-cell-focus': editing,
             'dsg-active-cell-disabled': activeCellIsDisabled,
+            'dsg-active-cell-readonly': activeCellIsReadonly
           })}
           style={activeCellRect}
         />
@@ -238,7 +263,7 @@ export const SelectionRect = React.memo(() => {
       {expandRowsRect && (
         <div className={cx('dsg-expand-rows-rect')} style={expandRowsRect} />
       )}
-      {expandRowsIndicator && (
+      {expandRowsIndicator && !activeCellIsReadonly && (
         <div
           className={cx(
             'dsg-expand-rows-indicator',

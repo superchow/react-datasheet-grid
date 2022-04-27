@@ -2,6 +2,7 @@ import React from 'react'
 import { SelectionContextType } from '../types'
 
 export const SelectionContext = React.createContext<SelectionContextType>({
+  showSelection: true,
   selection: null,
   headerRowHeight: 0,
   activeCell: null,
@@ -16,5 +17,13 @@ export const SelectionContext = React.createContext<SelectionContextType>({
   },
   editing: false,
   isCellDisabled: () => false,
+  isCellReadonly: () => false,
+  getActiveCellRowData: () => ({
+    rowData: null,
+    colIndex: 0,
+    rowIndex: 0
+  }),
+  getActiveCellBoundingClientRect: () => undefined,
+  getActiveCellRect: () => undefined,
   expandSelection: null,
 })

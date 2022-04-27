@@ -15,7 +15,7 @@ const KeyComponent: CellComponent<any, ColumnData> = ({
 
   // We wrap the setRowData function to assign the value to the desired key
   const setKeyData = useCallback(
-    (value) => {
+    (value: string | number) => {
       setRowData({ ...rowDataRef.current, [key]: value })
     },
     [key, setRowData]
@@ -51,6 +51,7 @@ export const keyColumn = <
   ...column,
   // We pass the key and the original column as columnData to be able to retrieve them in the cell component
   columnData: { key: key as string, original: column },
+  columnType: column.columnType,
   component: KeyComponent,
   // Here we simply wrap all functions to only pass the value of the desired key to the column, and not the entire row
   copyValue: ({ rowData, rowIndex }) =>
@@ -72,6 +73,14 @@ export const keyColumn = <
             : column.disabled ?? false
         }
       : column.disabled,
+  readonly:
+      typeof column.readonly === 'function'
+        ? ({ rowData, rowIndex }) => {
+            return typeof column.readonly === 'function'
+              ? column.readonly({ rowData: rowData[key], rowIndex })
+              : column.readonly ?? false
+          }
+        : column.readonly,
   cellClassName:
     typeof column.cellClassName === 'function'
       ? ({ rowData, rowIndex }) => {

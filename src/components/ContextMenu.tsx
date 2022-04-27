@@ -1,33 +1,26 @@
-import * as React from 'react'
-import { useCallback, useRef } from 'react'
+import React, { useCallback, useRef } from 'react'
+import operationTypes, { DELETE_ROW, DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
 import { useDocumentEventListener } from '../hooks/useDocumentEventListener'
-import { ContextMenuItem, ContextMenuComponentProps } from '../types'
+import { ContextMenuComponentProps, ContextMenuItem } from '../types'
+
 
 const renderItem = (item: ContextMenuItem) => {
-  if (item.type === 'DELETE_ROW') {
-    return 'Delete row'
+  if (operationTypes[item.type]) {
+    return operationTypes[item.type]
   }
 
-  if (item.type === 'DELETE_ROWS') {
+  if (item.type === DELETE_ROWS) {
     return (
       <>
-        Delete rows <b>{item.fromRow}</b> to <b>{item.toRow}</b>
+        删除 <b>{item.fromRow}</b> 到 <b>{item.toRow}</b> 行
       </>
     )
   }
 
-  if (item.type === 'INSERT_ROW_BELLOW') {
-    return 'Insert row below'
-  }
-
-  if (item.type === 'DUPLICATE_ROW') {
-    return 'Duplicate row'
-  }
-
-  if (item.type === 'DUPLICATE_ROWS') {
+  if (item.type === DUPLICATE_ROWS) {
     return (
       <>
-        Duplicate rows <b>{item.fromRow}</b> to <b>{item.toRow}</b>
+        复制 <b>{item.fromRow}</b> 到 <b>{item.toRow}</b> 行
       </>
     )
   }
@@ -73,3 +66,5 @@ export const ContextMenu = ({
     </div>
   )
 }
+
+export default ContextMenu

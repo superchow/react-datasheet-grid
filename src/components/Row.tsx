@@ -1,9 +1,10 @@
 import { areEqual, ListChildComponentProps } from 'react-window'
 import { ListItemData, RowProps } from '../types'
-import React, { useCallback } from 'react'
+import React, { HTMLAttributes, useCallback } from 'react'
 import cx from 'classnames'
 import { Cell } from './Cell'
 import { useFirstRender } from '../hooks/useFirstRender'
+import { omit } from 'lodash'
 
 const nullfunc = () => null
 
@@ -25,7 +26,9 @@ const RowComponent = React.memo(
     stopEditing,
     getContextMenuItems,
     rowClassName,
-  }: RowProps<any>) => {
+    className,
+    ...restProps
+  }: RowProps<any> & HTMLAttributes<HTMLTableRowElement>) => {
     const firstRender = useFirstRender()
 
     // True when we should render the light version (when we are scrolling)
@@ -50,45 +53,102 @@ const RowComponent = React.memo(
       insertRowAfter(index)
     }, [insertRowAfter, index])
 
+    const formatValue = (data: any): string|number|undefined => {
+      const dataType = typeof data
+      if (['string', 'number', 'bigint', 'symbol'].includes(dataType)) {
+        return data
+      } else if (dataType === 'boolean') {
+        return data ? 'TRUE' : 'FALSE'
+      } else if (dataType === 'object' && data !== null) {
+        return JSON.stringify(data)
+      } else if (dataType === 'function') {
+        return data.toString()
+      } else {
+        return data
+      }
+    }
+
     return (
-      <div
+      <tr
+        {...restProps}
         className={cx(
           'dsg-row',
+          `dsg-row-${index}`,
+          className,
           typeof rowClassName === 'string' ? rowClassName : null,
           typeof rowClassName === 'function'
             ? rowClassName({ rowData: data, rowIndex: index })
             : null
         )}
         style={style}
+        data-key={data.__hash}
+        data-value={formatValue(omit(data, '__hash'))}
       >
         {columns.map((column, i) => {
-          const Component = column.component
+          const { 
+            component: Component, 
+            disabled, 
+            readonly, 
+            colspan = 1, 
+            rowspan = 1,
+            columnData,
+            renderWhenScrolling,
+            cellClassName,
+            align,
+            ...restColumnProps
+          } = column
 
-          const disabled =
-            column.disabled === true ||
-            (typeof column.disabled === 'function' &&
-              column.disabled({ rowData: data, rowIndex: index }))
+          const renderDisabled =
+            disabled === true ||
+            (typeof disabled === 'function' &&
+              disabled({ rowData: data, rowIndex: index }))
+          const renderReadonly =
+              readonly === true ||
+              (typeof readonly === 'function' &&
+                readonly({ rowData: data, rowIndex: index }))
+
+          const renderColspan = typeof colspan === 'function' ? colspan(data) : colspan;
+          const renderRowspan = typeof rowspan === 'function' ? rowspan(data) : rowspan;
+          const isHidden = (renderRowspan === 0 || renderColspan === 0)
 
           return (
             <Cell
               key={i}
               gutter={i === 0}
-              disabled={disabled}
+              disabled={renderDisabled}
               stickyRight={hasStickyRightColumn && i === columns.length - 1}
               column={column}
+              rowData={data}
               active={active}
               className={cx(
-                !column.renderWhenScrolling && renderLight && 'dsg-cell-light',
-                typeof column.cellClassName === 'function'
-                  ? column.cellClassName({ rowData: data, rowIndex: index })
-                  : column.cellClassName
+                !renderWhenScrolling && renderLight && 'dsg-cell-light',
+                typeof cellClassName === 'function'
+                  ? cellClassName({ rowData: data, rowIndex: index })
+                  : cellClassName,
+                (renderColspan > 1) && 'dsg-cell-colspan',
+                (renderRowspan > 1) && 'dsg-cell-rowspan'
               )}
+              style={{
+                height: renderRowspan > 1 ? `${Math.ceil(renderRowspan)}00%` : 'auto',
+                visibility: isHidden ? 'hidden' : undefined
+              }}
+              colSpan={renderColspan}
+              rowSpan={renderRowspan}
+              data-key={`${i}-${data.__hash}`}
+              data-cell={formatValue({
+                row: index,
+                col: i
+              })}
+              data-v={isHidden ? undefined : formatValue(data[columnData?.key])}
             >
-              {(column.renderWhenScrolling || !renderLight) && (
+              {(renderWhenScrolling || !renderLight) && (
                 <Component
+                  {...restColumnProps}
                   rowData={data}
                   getContextMenuItems={getContextMenuItems}
-                  disabled={disabled}
+                  align={align}
+                  disabled={renderDisabled}
+                  readonly={renderReadonly}
                   active={activeColIndex === i - 1}
                   columnIndex={i - 1}
                   rowIndex={index}
@@ -102,13 +162,13 @@ const RowComponent = React.memo(
                   }
                   insertRowBelow={insertAfterGivenRow}
                   setRowData={setGivenRowData}
-                  columnData={column.columnData}
+                  columnData={columnData}
                 />
               )}
             </Cell>
           )
         })}
-      </div>
+      </tr>
     )
   },
   (prevProps, nextProps) => {
@@ -140,14 +200,14 @@ export const Row = <T extends any>({
       columns={data.columns}
       style={{
         ...style,
-        width: data.contentWidth ? data.contentWidth : '100%',
+        // width: data.contentWidth ? data.contentWidth : '100%',
       }}
       hasStickyRightColumn={data.hasStickyRightColumn}
       isScrolling={isScrolling}
       active={Boolean(
         index - 1 >= (data.selectionMinRow ?? Infinity) &&
-          index - 1 <= (data.selectionMaxRow ?? -Infinity) &&
-          data.activeCell
+        index - 1 <= (data.selectionMaxRow ?? -Infinity) &&
+        data.activeCell
       )}
       activeColIndex={
         data.activeCell?.row === index - 1 ? data.activeCell.col : null
