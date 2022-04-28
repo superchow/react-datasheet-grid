@@ -8,8 +8,11 @@ const ScrollableView = () => {
     rowHeight,
     columnWidths,
     headerRowHeight,
+    viewWidth,
     viewHeight,
     contentWidth,
+    contentHeight,
+    hasStickyRightColumn,
     edges,
   } = useContext(SelectionContext)
   if (!columnWidths) {
@@ -25,10 +28,9 @@ const ScrollableView = () => {
   <div
     className={cx({
       'dsg-scrollable-view': true,
+      'dsg-scrollable-view-y': true,
       'dsg-scrollable-view-t': !edges.top,
-      'dsg-scrollable-view-r': !edges.right,
       'dsg-scrollable-view-b': !edges.bottom,
-      'dsg-scrollable-view-l': !edges.left,
     })}
     style={{
       top: headerRowHeight,
@@ -37,6 +39,54 @@ const ScrollableView = () => {
       width: '100%',
     }}
   />
+  <div
+    className={cx({
+      'dsg-scrollable-view': true,
+      'dsg-scrollable-view-x': true,
+    })}
+    style={{
+      top: headerRowHeight,
+      left: columnWidths[0],
+      height: contentHeight ? contentHeight - headerRowHeight : 0,
+      width: contentWidth && viewWidth
+      ? contentWidth -
+        columnWidths[0] -
+        (hasStickyRightColumn
+          ? columnWidths[columnWidths.length - 1]
+          : 0)
+      : `calc(100% - ${
+          columnWidths[0] +
+          (hasStickyRightColumn
+            ? columnWidths[columnWidths.length - 1]
+            : 0)
+        }px)`,
+    }}
+  >
+    <div
+      className={cx({
+        'dsg-scrollable-view': true,
+        'dsg-scrollable-view-r': !edges.right,
+        'dsg-scrollable-view-l': !edges.left,
+      })}
+      style={{
+        top: headerRowHeight,
+        left: columnWidths[0],
+        height: contentHeight ? contentHeight - headerRowHeight : 0,
+        width: contentWidth && viewWidth
+        ? viewWidth -
+          columnWidths[0] -
+          (hasStickyRightColumn
+            ? columnWidths[columnWidths.length - 1]
+            : 0)
+        : `calc(100% - ${
+            columnWidths[0] +
+            (hasStickyRightColumn
+              ? columnWidths[columnWidths.length - 1]
+              : 0)
+          }px)`,
+      }}
+    />
+  </div>
 </div>
 }
 

@@ -153,11 +153,11 @@ export const DataSheetGrid = React.memo(
         refreshMode: 'throttle',
         refreshRate: 100,
       })
-      // const { width: tableWidth } = useResizeDetector({
-      //   targetRef: innerRef,
-      //   refreshMode: 'throttle',
-      //   refreshRate: 100,
-      // })
+      const { height: tableHeight } = useResizeDetector({
+        targetRef: innerRef,
+        refreshMode: 'throttle',
+        refreshRate: 100,
+      })
 
       const edges = useEdges(outerRef, width, height)
 
@@ -2050,6 +2050,7 @@ export const DataSheetGrid = React.memo(
         viewHeight: height,
         viewWidth: width,
         contentWidth: fullWidth ? undefined : contentWidth,
+        contentHeight: tableHeight ? tableHeight : undefined,
         edges,
         editing,
         isCellDisabled,
@@ -2207,7 +2208,8 @@ export const DataSheetGrid = React.memo(
             ref={beforeTabIndexRef}
             className='dsg-tabIndex dsg-tabIndex-start'
             style={{
-              width: contentWidth
+              width: contentWidth,
+              maxWidth: width
             }}
             tabIndex={rawColumns.length && data.length ? 0 : undefined}
             onFocus={(e) => {
@@ -2221,7 +2223,8 @@ export const DataSheetGrid = React.memo(
                 className={cx(
                   "dsg-container",
                   fullWidth && 'dsg-container-full',
-                  (contentWidth && width && contentWidth > width) && 'dsg-container-overflow'
+                  (contentWidth && width && contentWidth > width) && 'dsg-container-overflow-x',
+                  (tableHeight && height && tableHeight > height) && 'dsg-container-overflow-y'
                 )}
                 width="100%"
                 ref={listRef}
@@ -2244,7 +2247,8 @@ export const DataSheetGrid = React.memo(
             ref={afterTabIndexRef}
             className='dsg-tabIndex dsg-tabIndex-end'
             style={{
-              width: contentWidth
+              width: contentWidth,
+              maxWidth: width
             }}
             tabIndex={rawColumns.length && data.length ? 0 : undefined}
             onFocus={(e) => {

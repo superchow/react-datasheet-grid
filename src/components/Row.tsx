@@ -1,10 +1,11 @@
 import { areEqual, ListChildComponentProps } from 'react-window'
 import { ListItemData, RowProps } from '../types'
-import React, { HTMLAttributes, useCallback } from 'react'
+import React, { HTMLAttributes, useCallback, useContext } from 'react'
 import cx from 'classnames'
 import { Cell } from './Cell'
 import { useFirstRender } from '../hooks/useFirstRender'
 import { omit } from 'lodash'
+import { SelectionContext } from '../contexts/SelectionContext'
 
 const nullfunc = () => null
 
@@ -30,6 +31,7 @@ const RowComponent = React.memo(
     ...restProps
   }: RowProps<any> & HTMLAttributes<HTMLTableRowElement>) => {
     const firstRender = useFirstRender()
+    const { edges } = useContext(SelectionContext)
 
     // True when we should render the light version (when we are scrolling)
     const renderLight = isScrolling && firstRender
@@ -75,6 +77,8 @@ const RowComponent = React.memo(
           'dsg-row',
           `dsg-row-${index}`,
           className,
+          !edges.left && 'dsg-row-l',
+          !edges.right && 'dsg-row-r',
           typeof rowClassName === 'string' ? rowClassName : null,
           typeof rowClassName === 'function'
             ? rowClassName({ rowData: data, rowIndex: index })
