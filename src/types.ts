@@ -276,6 +276,7 @@ export type DataSheetGridProps<T> = {
   duplicateRow?: (opts: { rowData: T; rowIndex: number }) => T;
   autoAddRow?: boolean;
   lockRows?: boolean;
+  showAddRows?: boolean;
   disableContextMenu?: boolean;
   disableExpandSelection?: boolean;
   contextMenuComponent?: (props: ContextMenuComponentProps) => JSX.Element;

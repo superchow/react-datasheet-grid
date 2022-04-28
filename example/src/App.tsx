@@ -344,53 +344,50 @@ const TreeDataTable = () => {
 
         setJsonData(rowsCopy.filter(it => it._markDelete !== true))
       } else if (operation.type === 'CREATE') {
-        const addRowData = createRow()
-        if (!rows[operation.fromRowIndex - 1]) {
+        const count = operation.toRowIndex - operation.fromRowIndex
+        const addRows = rows.slice(operation.fromRowIndex, operation.toRowIndex)
+        if (!operation.fromRowIndex) {
           setJsonData([
-            addRowData,
-            ...rowsCopy
+            ...addRows,
+            ...rowsCopy.slice(operation.fromRowIndex),
           ])
           return
         }
-        const { __hash, ...currentRow } = rows[operation.fromRowIndex - 1]
-        const rowIndex = jsonData.findIndex(it => deepEqual(it, currentRow))
-        
-        // merge rowspan
-        if (currentRow.rowspan) {
-          Object.keys(currentRow.rowspan).forEach(key => {
-            const keyRowspan = currentRow.rowspan![key]
+        const { __hash, ...breakRow } = rowsCopy[operation.fromRowIndex - 1]
+        const rowIndex = jsonData.findIndex(it => deepEqual(it, breakRow))
+
+        // merge rows
+        if (breakRow.rowspan) {
+          Object.keys(breakRow.rowspan).forEach(key => {
+            breakRow.rowspan = breakRow.rowspan || {}
+            const keyRowspan = breakRow.rowspan![key]
             if (keyRowspan > 1) {
-              currentRow.rowspan![key] += 1
-              addRowData.rowspan![key] = 0
+              breakRow.rowspan![key] += count
+              addRows.forEach(it => it.rowspan![key] = 0)
             } else if (keyRowspan === 0) {
-              // new row
+              // new row rowspan
               const nextRow = rowsCopy[rowIndex + 1] 
               if (nextRow) {
                 if (nextRow.rowspan && nextRow.rowspan![key] === 0) {
-                  currentRow.rowspan = currentRow.rowspan || {}
-                  currentRow.rowspan[key] = 0
-                  // look up
+                  // find parent
                   const parentRow = rowsCopy.slice(0, rowIndex).reverse().find(it => {
                     return it.rowspan && it.rowspan[key] > 1
                   })
                   if (parentRow) {
-                    parentRow.rowspan![key] += 1
-                    addRowData.rowspan![key] = 0
+                    parentRow.rowspan![key] += count
+                    addRows.forEach(it => it.rowspan![key] = 0)
                   }
                 }
-              } else {
-                setJsonData([
-                  ...rowsCopy,
-                  addRowData,
-                ])
-                return
               }
             }
           })
-          rowsCopy.splice(rowIndex + 1, 0, addRowData)
-          setJsonData(rowsCopy)
-          return
         }
+
+        setJsonData([
+          ...rowsCopy.slice(0, operation.fromRowIndex),
+          ...addRows,
+          ...rowsCopy.slice(operation.fromRowIndex),
+        ])
       }
     }
 
