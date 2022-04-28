@@ -8,8 +8,6 @@ const ScrollableView = () => {
     rowHeight,
     columnWidths,
     headerRowHeight,
-    hasStickyRightColumn,
-    viewWidth,
     viewHeight,
     contentWidth,
     edges,
@@ -34,21 +32,9 @@ const ScrollableView = () => {
     })}
     style={{
       top: headerRowHeight,
-      left: columnWidths[0],
+      left: 0,
       height: viewHeight ? viewHeight - headerRowHeight : 0,
-      width:
-        contentWidth && viewWidth
-          ? viewWidth -
-            columnWidths[0] -
-            (hasStickyRightColumn
-              ? columnWidths[columnWidths.length - 1]
-              : 0)
-          : `calc(100% - ${
-              columnWidths[0] +
-              (hasStickyRightColumn
-                ? columnWidths[columnWidths.length - 1]
-                : 0)
-            }px)`,
+      width: '100%',
     }}
   />
 </div>
