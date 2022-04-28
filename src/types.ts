@@ -168,6 +168,7 @@ export type SelectionContextType = {
   viewWidth?: number;
   viewHeight?: number;
   contentWidth?: number;
+  contentHeight?: number;
   edges: { top: boolean; right: boolean; bottom: boolean; left: boolean };
   expandSelection: number | null;
 };
@@ -231,7 +232,7 @@ export type ContextMenuItem =
 export type ContextMenuComponentProps = {
   clientX: number;
   clientY: number;
-  cursorIndex: Cell;
+  cursorIndex?: Cell;
   items: ContextMenuItem[];
   close: () => void;
 };
