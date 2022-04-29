@@ -251,6 +251,7 @@ export type DataSheetGridProps<T> = {
   /** @todo */
   supportColspan?: boolean;
   onChange?: (value: T[], operations: Operation[]) => void;
+  /** @default true */
   lockColumns?: boolean;
   createCol?: (
     operation: ColumnOperation,
@@ -265,11 +266,16 @@ export type DataSheetGridProps<T> = {
   stickyRightColumn?: SimpleColumn<T, any>;
   height?: number;
   rowHeight?: number;
+  /** Head editable
+   * @default false
+   */
+  headerEditable?: boolean;
   headerRowHeight?: number;
   addRowsComponent?: (props: AddRowsComponentProps) => JSX.Element;
   createRow?: () => T;
   duplicateRow?: (opts: { rowData: T; rowIndex: number }) => T;
   autoAddRow?: boolean;
+  /** @default false */
   lockRows?: boolean;
   showAddRows?: boolean;
   disableContextMenu?: boolean;

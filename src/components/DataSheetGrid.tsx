@@ -97,6 +97,7 @@ export const DataSheetGrid = React.memo(
         columns: rawColumns = DEFAULT_COLUMNS,
         onColumnsChange = DEFAULT_EMPTY_CALLBACK,
         rowHeight = 40,
+        headerEditable = false,
         headerRowHeight = rowHeight,
         gutterColumn,
         stickyRightColumn,
@@ -1321,16 +1322,19 @@ export const DataSheetGrid = React.memo(
         if (rightClick || !clickInside || cursorIndex?.row !== -1) {
           return
         }
-        setEditing(false)
-        setActiveCell(null)
-        setSelectionCell(null)
-        setSelectionMode({
-          columns: false,
-          rows: false,
-          active: false,
-        })
-        setEditCol(cursorIndex?.col)
+        if (headerEditable) {
+          setEditing(false)
+          setActiveCell(null)
+          setSelectionCell(null)
+          setSelectionMode({
+            columns: false,
+            rows: false,
+            active: false,
+          })
+          setEditCol(cursorIndex?.col)
+        }
       }, [
+        headerEditable,
         contextMenu,
         contextMenuItems,
         getCursorIndex,
