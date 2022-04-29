@@ -447,6 +447,7 @@ const TreeDataTable = () => {
         value={jsonData}
         createRow={createRow}
         onChange={handleOnChange}
+        supportRowspan
         lockColumns={false}
         gutterColumn={gutterColumn}
         columns={columns}

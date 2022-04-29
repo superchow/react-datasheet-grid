@@ -91,6 +91,8 @@ export const DataSheetGrid = React.memo(
         height: maxHeight = 400,
         onChange = DEFAULT_EMPTY_CALLBACK,
         lockColumns = true,
+        supportRowspan = false,
+        supportColspan = false,
         createCol = CREATE_EMPTY_CALLBACK,
         columns: rawColumns = DEFAULT_COLUMNS,
         onColumnsChange = DEFAULT_EMPTY_CALLBACK,
@@ -166,7 +168,7 @@ export const DataSheetGrid = React.memo(
         columnWidths,
         columnRights,
       } = useColumnWidths(columns, width)
-      
+
       // Default value is 1 for the border
       const [heightDiff, setHeightDiff] = useDebounceState(1, 100)
 
@@ -806,7 +808,7 @@ export const DataSheetGrid = React.memo(
       const stopEditing = useCallback(
         ({ nextRow = true } = {}) => {
           if (activeCell?.row === dataRef.current.length - 1) {
-            if (nextRow && autoAddRow) {
+            if (nextRow && !lockRows && autoAddRow) {
               insertRowAfter(activeCell.row)
             } else {
               setEditing(false)
@@ -819,7 +821,7 @@ export const DataSheetGrid = React.memo(
             }
           }
         },
-        [activeCell?.row, autoAddRow, insertRowAfter, setActiveCell]
+        [activeCell?.row, lockRows, autoAddRow, insertRowAfter, setActiveCell]
       )
 
       const onCopy = useCallback(
@@ -1916,58 +1918,60 @@ export const DataSheetGrid = React.memo(
           }
         }
         // 合并，目前仅仅实现单列合并
-        if (selection &&
-          selection.min.col === selection.max.col &&
-          selection.max.row !== selection.min.row
-        ) {
-          const fromRow = selection.min.row
-          const toRow = selection.max.row
-          items.push({
-            type: MERGE_ROWS,
-            fromRow,
-            toRow,
-            action: () => {
-              setContextMenu(null)
-              mergeRows(selection.min.col, {
-                fromRowIndex: fromRow,
-                toRowIndex: toRow
+        if (supportRowspan) {
+          if (selection &&
+            selection.min.col === selection.max.col &&
+            selection.max.row !== selection.min.row
+          ) {
+            const fromRow = selection.min.row
+            const toRow = selection.max.row
+            items.push({
+              type: MERGE_ROWS,
+              fromRow,
+              toRow,
+              action: () => {
+                setContextMenu(null)
+                mergeRows(selection.min.col, {
+                  fromRowIndex: fromRow,
+                  toRowIndex: toRow
+                })
+              },
+            })
+            const colKey = rawColumns[selection.min.col].id!
+            const mergedRows = dataRef.current.slice(fromRow, toRow + 1)
+            if (mergedRows.some(it => it.rowspan && it.rowspan[colKey] > 1)) {
+              items.push({
+                type: CLEAR_MERGE_ROWS,
+                fromRow,
+                toRow,
+                action: () => {
+                  setContextMenu(null)
+                  clearRows(selection.min.col, {
+                    fromRowIndex: fromRow,
+                    toRowIndex: toRow
+                  })
+                },
               })
-            },
-          })
-          const colKey = rawColumns[selection.min.col].id!
-          const mergedRows = dataRef.current.slice(fromRow, toRow + 1)
-          if (mergedRows.some(it => it.rowspan && it.rowspan[colKey] > 1)) {
-            items.push({
-              type: CLEAR_MERGE_ROWS,
-              fromRow,
-              toRow,
-              action: () => {
-                setContextMenu(null)
-                clearRows(selection.min.col, {
-                  fromRowIndex: fromRow,
-                  toRowIndex: toRow
-                })
-              },
-            })
-          }
-        } else if (activeCell?.col !== undefined && activeCell.row !== undefined) {
-          const rowData = dataRef.current[activeCell.row]
-          const colKey = rawColumns[activeCell.col]?.id!
-          if (colKey !== undefined && rowData?.rowspan && rowData.rowspan[colKey] > 1) {
-            const fromRow = activeCell.row
-            const toRow = fromRow + rowData.rowspan[colKey] - 1
-            items.push({
-              type: CLEAR_MERGE_ROWS,
-              fromRow,
-              toRow,
-              action: () => {
-                setContextMenu(null)
-                clearRows(activeCell.col, {
-                  fromRowIndex: fromRow,
-                  toRowIndex: toRow
-                })
-              },
-            })
+            }
+          } else if (activeCell?.col !== undefined && activeCell.row !== undefined) {
+            const rowData = dataRef.current[activeCell.row]
+            const colKey = rawColumns[activeCell.col]?.id!
+            if (colKey !== undefined && rowData?.rowspan && rowData.rowspan[colKey] > 1) {
+              const fromRow = activeCell.row
+              const toRow = fromRow + rowData.rowspan[colKey] - 1
+              items.push({
+                type: CLEAR_MERGE_ROWS,
+                fromRow,
+                toRow,
+                action: () => {
+                  setContextMenu(null)
+                  clearRows(activeCell.col, {
+                    fromRowIndex: fromRow,
+                    toRowIndex: toRow
+                  })
+                },
+              })
+            }
           }
         }
 
@@ -1978,6 +1982,7 @@ export const DataSheetGrid = React.memo(
       }, [
         dataRef.current,
         rawColumns,
+        supportRowspan,
         lockColumns,
         activeCell?.col,
         selection?.min.col,
@@ -2061,6 +2066,8 @@ export const DataSheetGrid = React.memo(
         insertRowAfter,
         stopEditing,
         getContextMenuItems,
+        supportRowspan,
+        supportColspan,
         rowClassName,
       })
 

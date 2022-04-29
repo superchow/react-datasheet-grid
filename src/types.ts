@@ -65,6 +65,7 @@ export type Column<T, C, PasteValue, U = any> = {
   width: ColumnWidth;
   minWidth: number;
   maxWidth?: number;
+  /** @todo */
   colspan?: number | ((data: C) => number);
   rowspan?: number | ((data: C) => number);
   align?: Align;
@@ -112,8 +113,11 @@ export type ListItemData<T> = {
   deleteRows: (rowMin: number, rowMax?: number) => void;
   duplicateRows: (rowMin: number, rowMax?: number) => void;
   insertRowAfter: (row: number, count?: number) => void;
-  stopEditing: (opts?: { nextRow?: boolean }) => void;
+  stopEditing?: (opts?: { nextRow?: boolean }) => void;
   getContextMenuItems: () => ContextMenuItem[];
+  supportRowspan?: boolean;
+  /** @todo */
+  supportColspan?: boolean;
   rowClassName?:
     | string
     | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
@@ -173,25 +177,13 @@ export type SelectionContextType = {
   expandSelection: number | null;
 };
 
-export type RowProps<T> = {
+export type RowProps<T> = Omit<ListItemData<T>, 'data'|'activeCell'> & {
   index: number;
   data: T;
   style: React.CSSProperties;
   isScrolling?: boolean;
-  columns: Column<T, any, string>[];
-  hasStickyRightColumn: boolean;
   active: boolean;
   activeColIndex: number | null;
-  editing: boolean;
-  setRowData: (rowIndex: number, item: T) => void;
-  deleteRows: (rowMin: number, rowMax?: number) => void;
-  duplicateRows: (rowMin: number, rowMax?: number) => void;
-  insertRowAfter: (row: number, count?: number) => void;
-  stopEditing?: (opts?: { nextRow?: boolean }) => void;
-  getContextMenuItems: () => ContextMenuItem[];
-  rowClassName?:
-    | string
-    | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
 };
 
 export type SimpleColumn<T, C> = Partial<
@@ -255,6 +247,9 @@ export type DataSheetGridProps<T> = {
   rowClassName?:
     | string
     | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
+  supportRowspan?: boolean;
+  /** @todo */
+  supportColspan?: boolean;
   onChange?: (value: T[], operations: Operation[]) => void;
   lockColumns?: boolean;
   createCol?: (

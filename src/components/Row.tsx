@@ -27,6 +27,8 @@ const RowComponent = React.memo(
     stopEditing,
     getContextMenuItems,
     rowClassName,
+    supportRowspan,
+    supportColspan,
     className,
     ...restProps
   }: RowProps<any> & HTMLAttributes<HTMLTableRowElement>) => {
@@ -111,8 +113,12 @@ const RowComponent = React.memo(
               (typeof readonly === 'function' &&
                 readonly({ rowData: data, rowIndex: index }))
 
-          const renderColspan = typeof colspan === 'function' ? colspan(data) : colspan;
-          const renderRowspan = typeof rowspan === 'function' ? rowspan(data) : rowspan;
+          const renderColspan = supportColspan
+            ? typeof colspan === 'function' ? colspan(data) : colspan
+            : 1;
+          const renderRowspan = supportRowspan
+            ? typeof rowspan === 'function' ? rowspan(data) : rowspan
+            : 1;
           const isHidden = (renderRowspan === 0 || renderColspan === 0)
 
           return (
