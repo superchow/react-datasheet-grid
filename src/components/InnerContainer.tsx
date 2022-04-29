@@ -1,24 +1,35 @@
-import React, { ReactNode, useContext } from 'react'
+import React, { ReactNode, useContext, useMemo } from 'react'
 import { HeaderRow } from './HeaderRow'
 import { SelectionRect } from './SelectionRect'
 import cx from 'classnames'
-import { HeaderContext } from '../contexts/HeaderContext'
 import { SelectionContext } from '../contexts/SelectionContext'
 import { ScrollableView } from './scrollableView'
 
 export const InnerContainer = React.forwardRef<
   HTMLDivElement,
   { style: React.CSSProperties, children: ReactNode }
->(({ children, ...rest }, ref) => {
-  const {
-    contentWidth,
-  } = useContext(HeaderContext)
-  const {
-    showSelection
-  } = useContext(SelectionContext)
+>(({ children, style, ...rest }, ref) => {
+  const { showSelection, contentWidth, viewHeight, contentHeight } = useContext(SelectionContext)
+
+  const coverStyle = useMemo(() => {
+    const mergeStyle = {
+      ...style,
+      width: contentWidth ? contentWidth : '100%',
+    }
+    if (viewHeight && contentHeight) {
+      if (contentHeight < viewHeight) {
+        return {
+          ...mergeStyle,
+          height: contentHeight + 1
+        }
+      }
+    }
+    return mergeStyle
+  }, [style, viewHeight, contentHeight, contentWidth])
+
   return (
     <>
-      <div ref={ref} {...rest}>
+      <div ref={ref} style={style} {...rest}>
         <table className='dsg-table' style={{
           width: contentWidth
         }}>
@@ -29,9 +40,9 @@ export const InnerContainer = React.forwardRef<
             {children}
           </tbody>
         </table>
-        <ScrollableView />
+        <ScrollableView style={coverStyle} />
       </div>
-      {showSelection && <div className='dsg-container-cover' style={rest.style}>
+      {showSelection && <div className='dsg-container-cover' style={coverStyle} >
         <SelectionRect />
       </div>}
     </>

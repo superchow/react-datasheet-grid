@@ -1,11 +1,12 @@
 import cx from 'classnames'
-import React, { useContext } from 'react'
+import React, { HTMLAttributes, useContext, useMemo } from 'react'
 import { SelectionContext } from '../contexts/SelectionContext'
 
-const ScrollableView = () => {
+const ScrollableView = (props: {
+  style: React.CSSProperties
+} & HTMLAttributes<HTMLDivElement>) => {
+  const { style, className, ...rest } = props
   const {
-    dataLength,
-    rowHeight,
     columnWidths,
     headerRowHeight,
     viewWidth,
@@ -18,12 +19,13 @@ const ScrollableView = () => {
   if (!columnWidths) {
     return <></>
   }
+
   return <div
-    className="dsg-scrollable-view-container"
-    style={{
-      height: dataLength * rowHeight + headerRowHeight,
-      width: contentWidth ? contentWidth : '100%',
-    }}
+    {...rest}
+    className={
+      cx('dsg-scrollable-view-container', className)
+    }
+    style={style}
   >
   <div
     className={cx({

@@ -54,6 +54,7 @@ export const SelectionRect = React.memo(() => {
     viewWidth,
     viewHeight,
     contentWidth,
+    contentHeight,
     edges,
     isCellDisabled,
     isCellReadonly,
@@ -88,11 +89,9 @@ export const SelectionRect = React.memo(() => {
     return null
   }
 
-  const extraPixelV = (rowI: number, height?: number): number => {
-    if (height) {
-      return (rowHeight * rowI + headerRowHeight + height) < viewHeight!
-        ? 1
-        : 0
+  const extraPixelV = (rowI: number): number => {
+    if (contentHeight && viewHeight && viewHeight > contentHeight) {
+      return viewHeight - contentHeight
     }
     return rowI < dataLength - 1 ? 1 : 0
   }

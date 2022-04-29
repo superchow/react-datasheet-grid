@@ -30,26 +30,26 @@ const EditComponent = React.memo<{
   const ref = useRef<HTMLInputElement>(null)
 
   return <input
-  defaultValue={formatBlurredInput(rawData||'')}
-  className={cx('dsg-input', align && `dsg-input-align-${align}`)}
-  placeholder={focused ? rawData : placeholder}
-  tabIndex={-1}
-  autoFocus
-  ref={ref}
-  style={{ pointerEvents: focused ? 'auto' : 'none' }}
-  onBlur={(e) => {
-    if (continuousUpdates) {
-      setColumnData(parseUserInput(e.target.value))
-      setEditCol(-1)
-    }
-  }}
-  onKeyDown={(e) => {
-    if (e.key === 'Escape') {
-      setEditCol(-1)
-    }
-  }}
-/>
-}) 
+    defaultValue={formatBlurredInput(rawData || '')}
+    className={cx('dsg-input', align && `dsg-input-align-${align}`)}
+    placeholder={focused ? rawData : placeholder}
+    tabIndex={-1}
+    autoFocus
+    ref={ref}
+    style={{ pointerEvents: focused ? 'auto' : 'none' }}
+    onBlur={(e) => {
+      if (continuousUpdates) {
+        setColumnData(parseUserInput(e.target.value))
+        setEditCol(-1)
+      }
+    }}
+    onKeyDown={(e) => {
+      if (e.key === 'Escape') {
+        setEditCol(-1)
+      }
+    }}
+  />
+})
 
 export const HeaderRow = React.memo(() => {
   const {
@@ -98,10 +98,10 @@ export const HeaderRow = React.memo(() => {
           className={cx(
             'dsg-cell-header',
             activeColMin !== undefined &&
-              activeColMax !== undefined &&
-              activeColMin <= i - 1 &&
-              activeColMax >= i - 1 &&
-              'dsg-cell-header-active',
+            activeColMax !== undefined &&
+            activeColMin <= i - 1 &&
+            activeColMax >= i - 1 &&
+            'dsg-cell-header-active',
             i === focusedCol && 'dsg-cell-header-focus',
             column.headerClassName
           )}
@@ -109,19 +109,19 @@ export const HeaderRow = React.memo(() => {
         >
           {i !== focusedCol
             ? <div className="dsg-cell-header-container">{column.title as string}</div>
-            : isRenderFn(column.title) 
-                ? (column.title as FC)({
-                  rawData: column.title,
-                  setColumnData: (str: string) => handleColumnUpdata(str, i),
-                  setEditCol,
-                  focused: true
-                })
-                :  <EditComponent 
-                    rawData={column.title as string}
-                    setColumnData={(str) => handleColumnUpdata(str, i)}
-                    setEditCol={setEditCol}
-                    focused
-                />
+            : isRenderFn(column.title)
+              ? (column.title as FC)({
+                rawData: column.title,
+                setColumnData: (str: string) => handleColumnUpdata(str, i),
+                setEditCol,
+                focused: true
+              })
+              : <EditComponent
+                rawData={column.title as string}
+                setColumnData={(str) => handleColumnUpdata(str, i)}
+                setEditCol={setEditCol}
+                focused
+              />
           }
         </Cell>
       ))}
