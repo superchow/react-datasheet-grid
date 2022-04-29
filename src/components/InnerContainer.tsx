@@ -33,9 +33,9 @@ export const InnerContainer = React.forwardRef<
         <table className='dsg-table' style={{
           width: contentWidth
         }}>
-          {headerRowHeight ? <thead className={cx('dsg-row', 'dsg-row-header')}>
+          <thead className={cx('dsg-row', 'dsg-row-header', !headerRowHeight && 'dsg-row-hidden')}>
             <HeaderRow />
-          </thead> : null}
+          </thead>
           <tbody>
             {children}
           </tbody>

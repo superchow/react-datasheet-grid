@@ -68,6 +68,10 @@
   border-top: 1px solid var(--dsg-border-color);
   margin-top: -.5px;
 }
+.dsg-container-full + .dsg-tabIndex-end,
+.dsg-container-overflow-y + .dsg-tabIndex-end {
+  margin-top: 0;
+}
 
 .dsg-table {
   width: 100%;
@@ -95,6 +99,9 @@
 .dsg-row.dsg-row-header {
   box-shadow: none;
 }
+.dsg-row.dsg-row-hidden {
+  visibility: hidden;
+}
 
 .dsg-row-header .dsg-cell-header {
   box-shadow: 1px 0 var(--dsg-border-color);
@@ -109,9 +116,10 @@
   border: solid 1px var(--dsg-border-color);
   border-bottom: none;
   border-right: none;
-  box-shadow: 1px 1px var(--dsg-border-color);
+  box-shadow: 1px 0 var(--dsg-border-color);
   position: relative;
   word-break: break-all;
+  padding: 0;
 }
 
 .dsg-cell-left {
@@ -234,7 +242,7 @@
   border-bottom: none;
   border-right: none;
   transition: box-shadow 0.3s;
-  box-shadow: 0 0 var(--dsg-scroll-shadow-width)
+  /* box-shadow: 0 0 var(--dsg-scroll-shadow-width)
       calc(0px - var(--dsg-scroll-shadow-width)) var(--dsg-scroll-shadow-color)
       inset,
     0 0 var(--dsg-scroll-shadow-width)
@@ -245,7 +253,7 @@
       inset,
     0 0 var(--dsg-scroll-shadow-width)
       calc(0px - var(--dsg-scroll-shadow-width)) var(--dsg-scroll-shadow-color)
-      inset;
+      inset; */
 }
 
 .dsg-scrollable-view.dsg-scrollable-view-x {
