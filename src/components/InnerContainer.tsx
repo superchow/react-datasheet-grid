@@ -9,7 +9,7 @@ export const InnerContainer = React.forwardRef<
   HTMLDivElement,
   { style: React.CSSProperties, children: ReactNode }
 >(({ children, style, ...rest }, ref) => {
-  const { showSelection, contentWidth, viewHeight, contentHeight } = useContext(SelectionContext)
+  const { showSelection, contentWidth, viewHeight, contentHeight, headerRowHeight } = useContext(SelectionContext)
 
   const coverStyle = useMemo(() => {
     const mergeStyle = {
@@ -33,9 +33,9 @@ export const InnerContainer = React.forwardRef<
         <table className='dsg-table' style={{
           width: contentWidth
         }}>
-          <thead className={cx('dsg-row', 'dsg-row-header')}>
+          {headerRowHeight ? <thead className={cx('dsg-row', 'dsg-row-header')}>
             <HeaderRow />
-          </thead>
+          </thead> : null}
           <tbody>
             {children}
           </tbody>
