@@ -116,6 +116,7 @@ const RowComponent = React.memo(
           const renderColspan = supportColspan
             ? typeof colspan === 'function' ? colspan(data) : colspan
             : 1;
+          
           const renderRowspan = supportRowspan
             ? typeof rowspan === 'function' ? rowspan(data) : rowspan
             : 1;
@@ -203,16 +204,21 @@ export const Row = <T extends any>({
     return null
   }
 
+  const {
+    data: datas,
+    stopEditing,
+    ...restProps
+  } = data
+
   return (
     <RowComponent
+      {...restProps}
       index={index - 1}
-      data={data.data[index - 1]}
-      columns={data.columns}
+      data={datas[index - 1]}
       style={{
         ...style,
         // width: data.contentWidth ? data.contentWidth : '100%',
       }}
-      hasStickyRightColumn={data.hasStickyRightColumn}
       isScrolling={isScrolling}
       active={Boolean(
         index - 1 >= (data.selectionMinRow ?? Infinity) &&
@@ -223,17 +229,11 @@ export const Row = <T extends any>({
         data.activeCell?.row === index - 1 ? data.activeCell.col : null
       }
       editing={Boolean(data.activeCell?.row === index - 1 && data.editing)}
-      setRowData={data.setRowData}
-      deleteRows={data.deleteRows}
-      insertRowAfter={data.insertRowAfter}
-      duplicateRows={data.duplicateRows}
       stopEditing={
         data.activeCell?.row === index - 1 && data.editing
           ? data.stopEditing
           : undefined
       }
-      getContextMenuItems={data.getContextMenuItems}
-      rowClassName={data.rowClassName}
     />
   )
 }
