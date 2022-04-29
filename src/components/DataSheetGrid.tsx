@@ -340,6 +340,7 @@ export const DataSheetGrid = React.memo(
         columnHeights
       } = useColumnHeights(
         dataRef.current,
+        supportRowspan,
         columns,
         rowHeight,
         headerRowHeight,
@@ -539,7 +540,7 @@ export const DataSheetGrid = React.memo(
         },
         [onChange]
       )
-      /** 插入列 */
+      /** insert col after colIndex */
       const insertColAfter = useCallback(
         (col: number, count = 1) => {
           if (lockColumns) {
@@ -569,7 +570,7 @@ export const DataSheetGrid = React.memo(
           }))
         }, [createCol, lockColumns, rawColumns, onColumnsChange, setActiveCell])
 
-      /** 删除列 */
+      /** delete col */
       const deleteCols = useCallback(
         (colMin: number, colMax: number) => {
           if (lockColumns) { return }
@@ -588,7 +589,7 @@ export const DataSheetGrid = React.memo(
           )
           setActiveCell(null)
         }, [lockColumns, rawColumns, onColumnsChange, setActiveCell, setEditing, setSelectionCell])
-      /** 合并列 */
+      /** merge rows */
       const mergeRows = useCallback(
         (col: number, { fromRowIndex, toRowIndex }: { fromRowIndex: number, toRowIndex: number }) => {
           const colKey = rawColumns[col].id!
@@ -605,7 +606,7 @@ export const DataSheetGrid = React.memo(
             toRowIndex
           }])
         }, [dataRef.current, rawColumns, onChange])
-      /** 清除合并 */
+      /** clear megrged rows */
       const clearRows = useCallback(
         (col: number, { fromRowIndex, toRowIndex }: { fromRowIndex: number, toRowIndex: number }) => {
           const colKey = rawColumns[col].id!
@@ -1780,7 +1781,7 @@ export const DataSheetGrid = React.memo(
         const isInCell = selection && selection?.min.col === selection?.max.col
           && selection?.min.row === selection?.max.row
         if (!lockColumns) {
-          // 选中整列
+          // Select the entire column
           if (
             selection &&
             selection.max.col === selection.min.col &&
@@ -1917,7 +1918,7 @@ export const DataSheetGrid = React.memo(
             })
           }
         }
-        // 合并，目前仅仅实现单列合并
+        // merge rows
         if (supportRowspan) {
           if (selection &&
             selection.min.col === selection.max.col &&

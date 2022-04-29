@@ -4,6 +4,7 @@ import { useDeepEqualState } from './useDeepEqualState'
 
 export const useColumnHeights = (
   data: Array<any>,
+  supportRowspan: boolean = false,
   columns: Column<any, any, any>[],
   rowHeight: number,
   headerRowHeight: number,
@@ -57,9 +58,11 @@ export const useColumnHeights = (
     data.forEach((item) => {
       const colData:number[] = []
       columns.forEach(column => {
-        const rowspan = typeof column.rowspan === 'function'
-          ? column.rowspan(item)
-          : column.rowspan || 1
+        const rowspan = supportRowspan 
+          ? typeof column.rowspan === 'function'
+            ? column.rowspan(item)
+            : column.rowspan || 1
+          : 1
         colData.push(rowHeight * rowspan)
       })
       list.push(colData)
