@@ -3,6 +3,7 @@ import { Align, CellComponent, CellProps, Column, TextColumnOptions } from '../t
 import cx from 'classnames'
 import { useFirstRender } from '../hooks/useFirstRender'
 
+
 type TextColumnData<T> = {
   placeholder?: string
   align?: Align
@@ -20,7 +21,7 @@ const TextComponent = React.memo<
     focus,
     rowData,
     align: cellAlign,
-    setRowData,
+    setCellData,
     columnData: {
       placeholder,
       align,
@@ -39,7 +40,7 @@ const TextComponent = React.memo<
       rowData,
       formatInputOnFocus,
       formatBlurredInput,
-      setRowData,
+      setCellData,
       parseUserInput,
       continuousUpdates,
       firstRender,
@@ -55,7 +56,7 @@ const TextComponent = React.memo<
       rowData,
       formatInputOnFocus,
       formatBlurredInput,
-      setRowData,
+      setCellData,
       parseUserInput,
       continuousUpdates,
       firstRender,
@@ -76,7 +77,7 @@ const TextComponent = React.memo<
             asyncRef.current.rowData
           )
           // 选中状态时，再次点击将取消选中并移动光标到文字末尾
-          if(ref.current === document.activeElement) {
+          if (ref.current === document.activeElement) {
             const len = ref.current.value?.length || 0
             ref.current.setSelectionRange && ref.current.setSelectionRange(len, len)
           } else {
@@ -102,7 +103,7 @@ const TextComponent = React.memo<
             // Make sure that focus was gained more than 10 ms ago, used to prevent flickering
             asyncRef.current.changedAt >= asyncRef.current.focusedAt
           ) {
-            asyncRef.current.setRowData(
+            asyncRef.current.setCellData(
               asyncRef.current.parseUserInput(ref.current.value)
             )
           }
@@ -121,7 +122,9 @@ const TextComponent = React.memo<
       }
     }, [focus, rowData])
 
-    return (
+    return !focus ? <div className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`)}>
+      <span>{formatBlurredInput(rowData)}</span>
+    </div> : (
       <input
         // We use an uncontrolled component for better performance
         defaultValue={formatBlurredInput(rowData)}
@@ -140,7 +143,7 @@ const TextComponent = React.memo<
         onBlur={(e) => {
           // Only update the row's value as the user types if continuousUpdates is true
           if (continuousUpdates) {
-            setRowData(parseUserInput(e.target.value))
+            setCellData(parseUserInput(e.target.value))
           }
         }}
         onKeyDown={(e) => {

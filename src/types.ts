@@ -3,6 +3,17 @@ import { WorkSheet } from "xlsx";
 
 export type ColumnWidth = string | number;
 
+export type DataSheetRow = {
+  rowspan?: {
+    [k: string]: number
+  }
+  colspan?: {
+    [k: string]: number
+  }
+  __hash?: string
+  [k: string]: any
+}
+
 export type Cell = {
   col: number;
   row: number;
@@ -22,7 +33,8 @@ export type CellProps<T, C> = {
   disabled: boolean;
   readonly: boolean;
   columnData: C;
-  setRowData: (rowData: T) => void;
+  setRowData: (rowData: DataSheetRow) => void;
+  setCellData: (cellData: T) => void;
   stopEditing: (opts?: { nextRow: boolean }) => void;
   insertRowBelow: () => void;
   duplicateRow: () => void;
@@ -53,27 +65,37 @@ export type TextColumnOptions<T> = {
   parsePastedValue?: (value: string) => T
 }
 
+export type KeyColumnData<K, C, P> = { key: string; original: Partial<Column<K, C, P>> }
+
+// TODO
+export type RenderTitleProps = {
+  rawData?: string;
+  setColumnData: (str: string) => void;
+  setEditCol: (value: number) => void
+  focused?: boolean;
+} & Partial<TextColumnOptions<string>>
+export type RenderTitle = (props: RenderTitleProps) => React.ReactNode;
+
 export type Column<T, C, PasteValue, U = any> = {
   id?: string;
   headerClassName?: string;
-  title?: React.ReactNode | ((props: {
-    rawData: string;
-    setColumnData: (str: string) => void;
-    setEditCol: (value: number) => void
-    focused?: boolean;
-  } & Partial<TextColumnOptions<string>>) => JSX.Element);
+  title?: React.ReactNode | RenderTitle;
   width: ColumnWidth;
   minWidth: number;
   maxWidth?: number;
   /** @todo */
-  colspan?: number | ((data: C) => number);
-  rowspan?: number | ((data: C) => number);
+  hideWhenColspanZero?: boolean | ((data: T, rowIndex: number) => boolean);
+  colspan?: number | ((data: T, rowIndex: number) => number);
+  rowspan?: number | ((data: T, rowIndex: number) => number);
   align?: Align;
   renderWhenScrolling: boolean;
   component: CellComponent<T, C>;
   columnType?: ColumnType;
   columnData?: C;
+  // refuse keycode
   disableKeys: boolean;
+  /** disable ColumnOperation */
+  disableColumnOperation?: boolean;
   disabled: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
   readonly?: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
   cellClassName?:
@@ -88,17 +110,6 @@ export type Column<T, C, PasteValue, U = any> = {
   getContainer?: string | HTMLElement | (() => HTMLElement)
   [k: `config-${string}`]: U
 };
-
-export type DataSheetRow = {
-  rowspan?: {
-    [k: string]: number
-  }
-  colspan?: {
-    [k: string]: number
-  }
-  __hash?: string
-  [k: string]: any
-}
 
 export type ListItemData<T> = {
   data: T[];
@@ -222,11 +233,14 @@ export type ContextMenuItem =
     };
 
 export type ContextMenuComponentProps = {
-  clientX: number;
-  clientY: number;
+  id: string | number;
+  event?: MouseEvent;
+  clientX?: number;
+  clientY?: number;
   cursorIndex?: Cell;
   items: ContextMenuItem[];
-  close: () => void;
+  onShown?: () => void;
+  onHidden?: () => void;
 };
 
 export type Operation = {
@@ -241,6 +255,7 @@ export type ColumnOperation = {
 };
 
 export type DataSheetGridProps<T> = {
+  id?: number | string;
   value?: T[];
   style?: React.CSSProperties;
   className?: string;

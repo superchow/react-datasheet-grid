@@ -163,7 +163,7 @@ export const SelectComponent = React.memo(
   ({
     active,
     rowData,
-    setRowData,
+    setCellData,
     focus,
     stopEditing,
     columnData,
@@ -242,7 +242,7 @@ export const SelectComponent = React.memo(
         menuPortalTarget={document.body}
         menuIsOpen={focus}
         onChange={(data) => {
-          setRowData(data?.value ?? null)
+          setCellData(data?.value ?? null)
           setTimeout(stopEditing, 0)
         }}
         onMenuClose={() => stopEditing({ nextRow: false })}

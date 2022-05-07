@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef } from 'react'
 import { CellComponent, CellProps, Column } from '../types'
 
 const DateComponent = React.memo<CellProps<Date | null, any>>(
-  ({ focus, active, rowData, setRowData }) => {
+  ({ focus, active, rowData, setCellData }) => {
     const ref = useRef<HTMLInputElement>(null)
 
     // This is the same trick as in `textColumn`
@@ -32,7 +32,7 @@ const DateComponent = React.memo<CellProps<Date | null, any>>(
         // ...and the input returns a string that should be converted into a Date object
         onChange={(e) => {
           const date = new Date(e.target.value)
-          setRowData(isNaN(date.getTime()) ? null : date)
+          setCellData(isNaN(date.getTime()) ? null : date)
         }}
       />
     )

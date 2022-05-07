@@ -30,6 +30,9 @@ const RowComponent = React.memo(
     supportRowspan,
     supportColspan,
     className,
+    contentWidth,
+    selectionMinRow,
+    selectionMaxRow,
     ...restProps
   }: RowProps<any> & HTMLAttributes<HTMLTableRowElement>) => {
     const firstRender = useFirstRender()
@@ -94,7 +97,8 @@ const RowComponent = React.memo(
           const { 
             component: Component, 
             disabled, 
-            readonly, 
+            readonly,
+            hideWhenColspanZero = false,
             colspan = 1, 
             rowspan = 1,
             columnData,
@@ -113,16 +117,45 @@ const RowComponent = React.memo(
               (typeof readonly === 'function' &&
                 readonly({ rowData: data, rowIndex: index }))
 
+          const hideColspanZero = typeof hideWhenColspanZero === 'function' 
+            ? hideWhenColspanZero(data, index)
+            : hideWhenColspanZero
+
           const renderColspan = supportColspan
-            ? typeof colspan === 'function' ? colspan(data) : colspan
+            ? typeof colspan === 'function' ? colspan(data, index) : colspan
             : 1;
           
           const renderRowspan = supportRowspan
-            ? typeof rowspan === 'function' ? rowspan(data) : rowspan
+            ? typeof rowspan === 'function' ? rowspan(data, index) : rowspan
             : 1;
           const isHidden = (renderRowspan === 0 || renderColspan === 0)
+          const isCellHidden = hideColspanZero && renderColspan === 0
 
-          return (
+          const cellStyle: React.CSSProperties = {
+            height: renderRowspan > 1 ? `${Math.ceil(renderRowspan)}00%` : undefined,
+            visibility: isHidden ? 'hidden' : undefined
+          }
+          if (renderColspan > 1) {
+            cellStyle.flexGrow = renderColspan
+
+          } else if (renderColspan < 1) {
+            cellStyle.flexGrow = 0
+          }
+          if (renderColspan !== 1) {
+            if ('minWidth' in column) {
+              cellStyle.minWidth = column.minWidth * renderColspan
+            }
+            if ('maxWidth' in column) {
+              cellStyle.minWidth = column.maxWidth! * renderColspan
+            }
+          }
+          
+          const setKeyData = (value: string | number) => {
+            const key = column.id || columnData?.key
+            setGivenRowData({ ...data, [key]: value })
+          }
+
+          return isCellHidden ? null : (
             <Cell
               key={i}
               gutter={i === 0}
@@ -139,10 +172,7 @@ const RowComponent = React.memo(
                 (renderColspan > 1) && 'dsg-cell-colspan',
                 (renderRowspan > 1) && 'dsg-cell-rowspan'
               )}
-              style={{
-                height: renderRowspan > 1 ? `${Math.ceil(renderRowspan)}00%` : 'auto',
-                visibility: isHidden ? 'hidden' : undefined
-              }}
+              style={cellStyle}
               colSpan={renderColspan}
               rowSpan={renderRowspan}
               data-key={`${i}-${data.__hash}`}
@@ -173,6 +203,7 @@ const RowComponent = React.memo(
                   }
                   insertRowBelow={insertAfterGivenRow}
                   setRowData={setGivenRowData}
+                  setCellData={setKeyData}
                   columnData={columnData}
                 />
               )}
@@ -207,6 +238,7 @@ export const Row = <T extends any>({
   const {
     data: datas,
     stopEditing,
+    activeCell,
     ...restProps
   } = data
 

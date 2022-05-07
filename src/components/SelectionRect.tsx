@@ -197,7 +197,7 @@ export const SelectionRect = React.memo(() => {
           />
         </div>
       )}
-      {activeCellRect && activeCell && !activeCellIsReadonly && (
+      {activeCellRect && activeCell && !activeCellIsReadonly && !!activeClientRect.width && (
         <div
           className={cx('dsg-active-cell', {
             'dsg-active-cell-focus': editing,
@@ -205,6 +205,7 @@ export const SelectionRect = React.memo(() => {
             'dsg-active-cell-readonly': activeCellIsReadonly
           })}
           style={activeCellRect}
+          data-cell={JSON.stringify(activeCell)}
         />
       )}
       {selectionRect && activeCellRect && (

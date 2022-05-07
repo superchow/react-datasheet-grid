@@ -1,6 +1,11 @@
-import React, { useCallback, useRef } from 'react'
-import operationTypes, { DELETE_ROW, DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
-import { useDocumentEventListener } from '../hooks/useDocumentEventListener'
+import React, { useEffect } from 'react'
+import {
+  Menu,
+  Item,
+  useContextMenu
+} from "react-contexify";
+import cx from 'classnames'
+import operationTypes, { DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
 import { ContextMenuComponentProps, ContextMenuItem } from '../types'
 
 
@@ -29,42 +34,43 @@ const renderItem = (item: ContextMenuItem) => {
 }
 
 export const ContextMenu = ({
+  id,
+  event,
   clientX,
   clientY,
   items,
-  close,
+  onShown,
+  onHidden
 }: ContextMenuComponentProps) => {
-  const containerRef = useRef<HTMLDivElement>(null)
 
-  const onClickOutside = useCallback(
-    (event: MouseEvent) => {
-      const clickInside = containerRef.current?.contains(event.target as Node)
+  const { show, hideAll } = useContextMenu({
+    id
+  });
 
-      if (!clickInside) {
-        close()
-      }
-    },
-    [close]
-  )
-  useDocumentEventListener('mousedown', onClickOutside)
+  useEffect(() => {
+    if (event) {
+      const x = clientX || event.clientX
+      const y = clientY || event.clientY
+      show(event, {
+        position: {
+          x,
+          y
+        }
+      })
+    } else {
+      hideAll()
+    }
+  }, [id, event, clientX, clientY])
 
-  return (
-    <div
-      className="dsg-context-menu"
-      style={{ left: clientX + 'px', top: clientY + 'px' }}
-      ref={containerRef}
-    >
-      {items.map((item) => (
-        <div
-          key={item.type}
-          onClick={item.action}
-          className="dsg-context-menu-item"
-        >
-          {renderItem(item)}
-        </div>
-      ))}
-    </div>
-  )
+  return <Menu 
+    id={id}
+    className={cx('dsg-context-menu', `dsg-menu-${id}`)} 
+    animation={{ exit: false, enter: false }}
+    onShown={onShown}
+    onHidden={onHidden}
+  >
+    {items.map(it => (<Item key={it.type} className="dsg-context-menu-item" onClick={it.action}>{renderItem(it)}</Item>))}
+  </Menu>
 }
 
 export default ContextMenu

@@ -2,26 +2,13 @@ import React, { FC, ReactNode, useCallback, useContext, useMemo, useRef } from '
 import { HeaderContext } from '../contexts/HeaderContext'
 import cx from 'classnames'
 import { Cell } from './Cell'
-import { Column, TextColumnOptions } from '../types'
+import { Column, RenderTitle, RenderTitleProps, TextColumnOptions } from '../types'
 
-type Title = React.ReactNode | ((props: {
-  rawData: string;
-  setColumnData: (str: string) => void;
-  setEditCol: (value: number) => void;
-  focused?: boolean | undefined;
-} & Partial<TextColumnOptions<string>>) => JSX.Element)
-
-const EditComponent = React.memo<{
-  rawData?: string;
-  setColumnData: (str: string) => void;
-  setEditCol: (value: number) => void
-  focused?: boolean;
-} & TextColumnOptions<string>>(({
+const EditComponent = React.memo<RenderTitleProps>(({
   rawData,
   focused,
   setColumnData,
   setEditCol,
-  placeholder,
   align,
   continuousUpdates = true,
   parseUserInput = (value) => (value?.trim() || null) as unknown as string,
@@ -32,7 +19,7 @@ const EditComponent = React.memo<{
   return <input
     defaultValue={formatBlurredInput(rawData || '')}
     className={cx('dsg-input', align && `dsg-input-align-${align}`)}
-    placeholder={focused ? rawData : placeholder}
+    placeholder={rawData}
     tabIndex={-1}
     autoFocus
     ref={ref}
@@ -44,7 +31,7 @@ const EditComponent = React.memo<{
       }
     }}
     onKeyDown={(e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'Enter') {
         setEditCol(-1)
       }
     }}
@@ -66,7 +53,7 @@ export const HeaderRow = React.memo(() => {
 
   const focusedCol = (editingCol !== undefined && editingCol > -1) ? editingCol + 1 : -1
 
-  const isRenderFn = (node: Title) => typeof node === 'function'
+  const isRenderFn = (node: Column<any, any, any>['title']) => typeof node === 'function'
 
   const handleColumnUpdata = useCallback((title: string, index: number) => {
     const newCols = columns.slice(1)
@@ -84,12 +71,14 @@ export const HeaderRow = React.memo(() => {
     <tr
       className={cx('dsg-row')}
       style={{
-        // width: contentWidth ? contentWidth : '100%',
+        width: contentWidth ? contentWidth : '100%',
         height,
       }}
     >
-      {columns.map((column, i) => (
-        <Cell
+      {columns.map((column, i) => {
+        const isJsxTitle = isRenderFn(column.title)
+        const isFocus = i === focusedCol
+        return <Cell
           key={i}
           gutter={i === 0}
           stickyRight={hasStickyRightColumn && i === columns.length - 1}
@@ -102,29 +91,32 @@ export const HeaderRow = React.memo(() => {
             activeColMin <= i - 1 &&
             activeColMax >= i - 1 &&
             'dsg-cell-header-active',
-            i === focusedCol && 'dsg-cell-header-focus',
+            isFocus && 'dsg-cell-header-focus',
             column.headerClassName
           )}
           data-t={column.columnType}
         >
-          {i !== focusedCol
-            ? <div className="dsg-cell-header-container">{column.title as string}</div>
-            : isRenderFn(column.title)
-              ? (column.title as FC)({
-                rawData: column.title,
-                setColumnData: (str: string) => handleColumnUpdata(str, i),
-                setEditCol,
-                focused: true
-              })
-              : <EditComponent
+          {
+            isJsxTitle
+            ? (column.title as RenderTitle)({
+              rawData: '',
+              setColumnData: (str: string) => handleColumnUpdata(str, i),
+              setEditCol,
+              focused: isFocus,
+              align: column.align,
+            })
+            : isFocus 
+              ? <EditComponent
                 rawData={column.title as string}
                 setColumnData={(str) => handleColumnUpdata(str, i)}
                 setEditCol={setEditCol}
                 focused
+                align={column.align}
               />
+              : <div className="dsg-cell-header-container">{column.title as string}</div>
           }
         </Cell>
-      ))}
+      })}
     </tr>
   )
 })

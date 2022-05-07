@@ -19,7 +19,7 @@ const FALSY = [
 ]
 
 const CheckboxComponent = React.memo<CellProps<boolean, any>>(
-  ({ focus, rowData, setRowData, active, stopEditing }) => {
+  ({ focus, rowData, setCellData, active, stopEditing }) => {
     const ref = useRef<HTMLInputElement>(null)
 
     // When cell becomes focus we immediately toggle the checkbox and blur the cell by calling `stopEditing`
@@ -27,7 +27,7 @@ const CheckboxComponent = React.memo<CellProps<boolean, any>>(
     // This way the user can keep pressing Enter to toggle the checkbox on and off multiple times
     useLayoutEffect(() => {
       if (focus) {
-        setRowData(!rowData)
+        setCellData(!rowData)
         stopEditing({ nextRow: false })
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,7 +43,7 @@ const CheckboxComponent = React.memo<CellProps<boolean, any>>(
         checked={Boolean(rowData)}
         // When cell is not active, we allow the user to toggle the checkbox by clicking on it
         // When cell becomes active, we disable this feature and rely on focus instead (see `useLayoutEffect` above)
-        onMouseDown={() => !active && setRowData(!rowData)}
+        onMouseDown={() => !active && setCellData(!rowData)}
         onChange={() => null}
       />
     )
@@ -54,6 +54,9 @@ CheckboxComponent.displayName = 'CheckboxComponent'
 
 export const checkboxColumn: Partial<Column<boolean, any, string>> = {
   component: CheckboxComponent as CellComponent<boolean, any>,
+  width: '0 0 40px',
+  minWidth: 40,
+  maxWidth: 100,
   deleteValue: () => false,
   // We can customize what value is copied: when the checkbox is checked we copy YES, otherwise we copy NO
   copyValue: ({ rowData }) => (rowData ? 'YES' : 'NO'),

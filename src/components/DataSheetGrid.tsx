@@ -56,7 +56,7 @@ import objHash from 'object-hash';
 import { keyColumn } from '../columns/keyColumn'
 import { textColumn } from '../columns/textColumn'
 import cx from 'classnames'
-import { ColInfo, Table2SheetOpts, utils, WorkSheet } from 'xlsx';
+import { Table2SheetOpts, utils } from 'xlsx';
 import { omit } from 'lodash'
 
 
@@ -85,6 +85,7 @@ export const DataSheetGrid = React.memo(
   React.forwardRef<DataSheetGridRef, DataSheetGridProps<any>>(
     <T extends DataSheetRow>(
       {
+        id,
         value: data = DEFAULT_DATA,
         className,
         style,
@@ -132,6 +133,9 @@ export const DataSheetGrid = React.memo(
       const beforeTabIndexRef = useRef<HTMLDivElement>(null)
       const afterTabIndexRef = useRef<HTMLDivElement>(null)
 
+      // Record ID
+      const IDRef = useRef(id ?? Date.now())
+
       const dataRef = useRef(data)
       dataRef.current = data.map((item: any) => {
         return {
@@ -148,45 +152,11 @@ export const DataSheetGrid = React.memo(
         listRef.current?.resetAfterIndex(0)
       }, [headerRowHeight, rowHeight])
 
-
-      // Width and height of the scrollable area
-      const { width, height } = useResizeDetector({
-        targetRef: outerRef,
-        refreshMode: 'throttle',
-        refreshRate: 100,
-      })
-      const { height: tableHeight } = useResizeDetector({
-        targetRef: innerRef,
-        refreshMode: 'throttle',
-        refreshRate: 100,
-      })
-
-      const edges = useEdges(outerRef, width, height)
-
-      const {
-        fullWidth,
-        totalWidth: contentWidth,
-        columnWidths,
-        columnRights,
-      } = useColumnWidths(columns, width)
-
-      // Default value is 1 for the border
-      const [heightDiff, setHeightDiff] = useDebounceState(1, 100)
-
-      // Height of the list (including scrollbars and borders) to display
-      const displayHeight = Math.min(
-        maxHeight,
-        headerRowHeight + data.length * rowHeight + heightDiff
-      )
-
-      setHeightDiff((height ? displayHeight - Math.ceil(height) : 0))
-
-      // 
-
       // x,y coordinates of the right click
       const [contextMenu, setContextMenu] = useState<{
-        x: number
-        y: number
+        event: MouseEvent
+        x?: number
+        y?: number
         cursorIndex: Cell
       } | null>(null)
 
@@ -245,6 +215,58 @@ export const DataSheetGrid = React.memo(
         active: false,
       })
 
+      // Width and height of the scrollable area
+      const { width, height } = useResizeDetector({
+        targetRef: outerRef,
+        refreshMode: 'throttle',
+        refreshRate: 100,
+      })
+      const { height: tableHeight } = useResizeDetector({
+        targetRef: innerRef,
+        refreshMode: 'throttle',
+        refreshRate: 100,
+      })
+
+      const edges = useEdges(outerRef, width, height)
+
+      const {
+        fullWidth,
+        totalWidth: contentWidth,
+        columnWidths,
+        columnRights,
+      } = useColumnWidths(
+        dataRef.current,
+        supportColspan,
+        columns,
+        width,
+        activeCell as Cell,
+      )
+
+      const {
+        columnRowTops,
+        columnHeights
+      } = useColumnHeights(
+        dataRef.current,
+        supportRowspan,
+        columns,
+        rowHeight,
+        headerRowHeight,
+        activeCell as Cell,
+        innerRef.current,
+        height
+      )
+
+      // Default value is 1 for the border
+      const [heightDiff, setHeightDiff] = useDebounceState(1, 100)
+
+      // Height of the list (including scrollbars and borders) to display
+      const displayHeight = Math.min(
+        maxHeight,
+        headerRowHeight + data.length * rowHeight + heightDiff
+      )
+
+      setHeightDiff((height ? displayHeight - Math.ceil(height) : 0))
+
       // Same as expandSelectionRowsCount but is null when we should not be able to expand the selection
       const expandSelection =
         disableExpandSelection ||
@@ -281,6 +303,18 @@ export const DataSheetGrid = React.memo(
           force: boolean = false,
           includeSticky: boolean = false
         ): Cell | null => {
+          // Fast positioning 
+          const target = (event.target || event.srcElement) as HTMLElement
+          if (target && target.classList.contains('dsg-cell')) {
+            const cellStr = target.getAttribute('data-cell')
+            const cell: Cell = JSON.parse(cellStr || '{}')
+            if (cell && 'col' in cell && 'row' in cell) {
+              return {
+                ...cell,
+                col: cell.col - 1
+              }
+            }
+          }
           const innerBoundingClientRect = getInnerBoundingClientRect(force)
           const outerBoundingClientRect =
             includeSticky && getOuterBoundingClientRect(force)
@@ -334,20 +368,6 @@ export const DataSheetGrid = React.memo(
           rowHeight,
           hasStickyRightColumn,
         ]
-      )
-
-      const {
-        columnRowTops,
-        columnHeights
-      } = useColumnHeights(
-        dataRef.current,
-        supportRowspan,
-        columns,
-        rowHeight,
-        headerRowHeight,
-        activeCell as Cell,
-        innerRef.current,
-        height
       )
 
       const isCellDisabled = useCallback(
@@ -1074,9 +1094,8 @@ export const DataSheetGrid = React.memo(
           if (contextMenu && contextMenuItems.length) {
             return
           }
-          const isInput = event.target instanceof HTMLInputElement
-          if (isInput) { return }
 
+          const isInput = event.target instanceof HTMLInputElement
           const rightClick = event.button === 2
           const clickInside =
             innerRef.current?.contains(event.target as Node) || false
@@ -1084,7 +1103,10 @@ export const DataSheetGrid = React.memo(
           const cursorIndex = clickInside
             ? getCursorIndex(event, true, true)
             : null
-
+          // click on header
+          if (clickInside && isInput && cursorIndex?.row === -1) {
+            return
+          }
           if (
             !clickInside &&
             editing &&
@@ -1093,7 +1115,9 @@ export const DataSheetGrid = React.memo(
           ) {
             return
           }
-
+          if (!clickInside || (clickInside && isInput)) {
+            setExpandingSelectionFromRowIndex(null)
+          }
           if (
             event.target instanceof HTMLElement &&
             event.target.className.includes('dsg-expand-rows-indicator')
@@ -1532,7 +1556,6 @@ export const DataSheetGrid = React.memo(
           if (!activeCell) {
             return
           }
-
           if (
             event.key === 'Tab' &&
             !event.shiftKey &&
@@ -1773,7 +1796,7 @@ export const DataSheetGrid = React.memo(
 
           if (clickInside && !clickOnActiveCell) {
             event.preventDefault()
-            setContextMenu({ x: event.clientX, y: event.clientY, cursorIndex: cursorIndex as Cell })
+            setContextMenu({ event, cursorIndex: cursorIndex as Cell })
           }
         },
         [getCursorIndex, editing, activeCell, selection]
@@ -1791,49 +1814,55 @@ export const DataSheetGrid = React.memo(
             selection.max.col === selection.min.col &&
             (selection.max.row - selection.min.row === dataRef.current.length - 1)
           ) {
-            items.push({
-              type: INSERT_COL_BEFORE,
-              action: () => {
-                setContextMenu(null)
-                insertColAfter(selection.min.col - 1)
-              },
-            })
-            items.push({
-              type: INSERT_COL_AFTER,
-              action: () => {
-                setContextMenu(null)
-                insertColAfter(selection.max.col)
-              },
-            })
-            items.push({
-              type: DELETE_COL,
-              action: () => {
-                setContextMenu(null)
-                deleteCols(selection.min.col, selection.max.col)
-              },
-            })
+            const disableColumnOperation = rawColumns[selection.min.col].disableColumnOperation
+            if (!disableColumnOperation) {
+              items.push({
+                type: INSERT_COL_BEFORE,
+                action: () => {
+                  setContextMenu(null)
+                  insertColAfter(selection.min.col - 1)
+                },
+              })
+              items.push({
+                type: INSERT_COL_AFTER,
+                action: () => {
+                  setContextMenu(null)
+                  insertColAfter(selection.max.col)
+                },
+              })
+              items.push({
+                type: DELETE_COL,
+                action: () => {
+                  setContextMenu(null)
+                  deleteCols(selection.min.col, selection.max.col)
+                },
+              })
+            }
           } else if (dataRef.current?.length === 1 && activeCell?.col !== undefined && activeCell.row !== undefined) {
-            items.push({
-              type: INSERT_COL_BEFORE,
-              action: () => {
-                setContextMenu(null)
-                insertColAfter(activeCell.col - 1)
-              },
-            })
-            items.push({
-              type: INSERT_COL_AFTER,
-              action: () => {
-                setContextMenu(null)
-                insertColAfter(activeCell.col)
-              },
-            })
-            items.push({
-              type: DELETE_COL,
-              action: () => {
-                setContextMenu(null)
-                deleteCols(activeCell.col, activeCell.col)
-              },
-            })
+            const disableColumnOperation = rawColumns[activeCell.col].disableColumnOperation
+            if (!disableColumnOperation) {
+              items.push({
+                type: INSERT_COL_BEFORE,
+                action: () => {
+                  setContextMenu(null)
+                  insertColAfter(activeCell.col - 1)
+                },
+              })
+              items.push({
+                type: INSERT_COL_AFTER,
+                action: () => {
+                  setContextMenu(null)
+                  insertColAfter(activeCell.col)
+                },
+              })
+              items.push({
+                type: DELETE_COL,
+                action: () => {
+                  setContextMenu(null)
+                  deleteCols(activeCell.col, activeCell.col)
+                },
+              })
+            }
           }
         }
 
@@ -2190,14 +2219,10 @@ export const DataSheetGrid = React.memo(
       ])
 
       return (
-        <div className={className} style={style} ref={domRef} {...restProps}>
+        <div id={`${IDRef.current}`} className={cx('dsg-data-sheet-grid', className)} style={style} ref={domRef} {...restProps}>
           <div
             ref={beforeTabIndexRef}
             className='dsg-tabIndex dsg-tabIndex-start'
-            style={{
-              width: contentWidth,
-              maxWidth: width
-            }}
             tabIndex={rawColumns.length && data.length ? 0 : undefined}
             onFocus={(e) => {
               e.target.blur()
@@ -2233,10 +2258,6 @@ export const DataSheetGrid = React.memo(
           <div
             ref={afterTabIndexRef}
             className='dsg-tabIndex dsg-tabIndex-end'
-            style={{
-              width: contentWidth,
-              maxWidth: width
-            }}
             tabIndex={rawColumns.length && data.length ? 0 : undefined}
             onFocus={(e) => {
               e.target.blur()
@@ -2251,15 +2272,15 @@ export const DataSheetGrid = React.memo(
               addRows={(count) => insertRowAfter(data.length - 1, count)}
             />
           )}
-          {contextMenu && contextMenuItems.length > 0 && (
-            <ContextMenuComponent
-              clientX={contextMenu.x}
-              clientY={contextMenu.y}
-              cursorIndex={contextMenu.cursorIndex}
-              items={contextMenuItems}
-              close={() => setContextMenu(null)}
-            />
-          )}
+          <ContextMenuComponent
+            id={IDRef.current}
+            event={contextMenu?.event}
+            clientX={contextMenu?.x}
+            clientY={contextMenu?.y}
+            cursorIndex={contextMenu?.cursorIndex}
+            items={contextMenuItems}
+            onHidden={() => setContextMenu(null)}
+          />
         </div>
       )
     }

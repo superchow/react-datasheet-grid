@@ -1,12 +1,11 @@
 import React, { useCallback, useRef } from 'react'
-import { CellComponent, Column } from '../types'
+import { CellComponent, Column, KeyColumnData } from '../types'
 
-type ColumnData = { key: string; original: Partial<Column<any, any, any>> }
-
-const KeyComponent: CellComponent<any, ColumnData> = ({
+const KeyComponent: CellComponent<any, KeyColumnData<any, any, any>> = ({
   columnData: { key, original },
   rowData,
   setRowData,
+  setCellData,
   ...rest
 }) => {
   // We use a ref so useCallback does not produce a new setKeyData function every time the rowData changes
@@ -16,13 +15,17 @@ const KeyComponent: CellComponent<any, ColumnData> = ({
   // We wrap the setRowData function to assign the value to the desired key
   const setKeyData = useCallback(
     (value: string | number) => {
-      setRowData({ ...rowDataRef.current, [key]: value })
+      if (setCellData) {
+        setCellData(value)
+      } else {
+        setRowData({ ...rowDataRef.current, [key]: value })
+      }
     },
-    [key, setRowData]
+    [key, setRowData, setCellData]
   )
 
   if (!original.component) {
-    return <></>
+    return rowDataRef.current[key]
   }
 
   const Component = original.component
@@ -30,7 +33,8 @@ const KeyComponent: CellComponent<any, ColumnData> = ({
   return (
     <Component
       columnData={original.columnData}
-      setRowData={setKeyData}
+      setRowData={setRowData}
+      setCellData={setKeyData}
       // We only pass the value of the desired key, this is why each cell does not have to re-render everytime
       // another cell in the same row changes!
       rowData={rowData[key]}
@@ -40,13 +44,13 @@ const KeyComponent: CellComponent<any, ColumnData> = ({
 }
 
 export const keyColumn = <
-  T extends Record<string, any>,
+  T extends Record<string|number, any>,
   K extends keyof T = keyof T,
   PasteValue = string
 >(
   key: K,
   column: Partial<Column<T[K], any, PasteValue>>
-): Partial<Column<T, ColumnData, PasteValue>> => ({
+): Partial<Column<T[K], KeyColumnData<T[K], any, PasteValue>, PasteValue>> => ({
   id: key as string,
   ...column,
   // We pass the key and the original column as columnData to be able to retrieve them in the cell component
