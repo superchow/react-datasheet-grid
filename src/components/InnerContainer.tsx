@@ -29,7 +29,7 @@ export const InnerContainer = React.forwardRef<
 
   return (
     <>
-      <div ref={ref} style={style} {...rest}>
+      <div ref={ref} className="dsg-content" style={{...style, minWidth: coverStyle.width}} {...rest}>
         <table className='dsg-table' style={{
           width: contentWidth
         }}>

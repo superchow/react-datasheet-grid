@@ -5,7 +5,7 @@ import { Cell } from './Cell'
 import { Column, RenderTitle, RenderTitleProps, TextColumnOptions } from '../types'
 
 const EditComponent = React.memo<RenderTitleProps>(({
-  rawData,
+  title,
   focused,
   setColumnData,
   setEditCol,
@@ -17,9 +17,9 @@ const EditComponent = React.memo<RenderTitleProps>(({
   const ref = useRef<HTMLInputElement>(null)
 
   return <input
-    defaultValue={formatBlurredInput(rawData || '')}
+    defaultValue={formatBlurredInput(String(title || ''))}
     className={cx('dsg-input', align && `dsg-input-align-${align}`)}
-    placeholder={rawData}
+    placeholder={String(title)}
     tabIndex={-1}
     autoFocus
     ref={ref}
@@ -53,7 +53,7 @@ export const HeaderRow = React.memo(() => {
 
   const focusedCol = (editingCol !== undefined && editingCol > -1) ? editingCol + 1 : -1
 
-  const isRenderFn = (node: Column<any, any, any>['title']) => typeof node === 'function'
+  const isRenderFn = (node: any) => typeof node === 'function'
 
   const handleColumnUpdata = useCallback((title: string, index: number) => {
     const newCols = columns.slice(1)
@@ -76,7 +76,7 @@ export const HeaderRow = React.memo(() => {
       }}
     >
       {columns.map((column, i) => {
-        const isJsxTitle = isRenderFn(column.title)
+        const isJsxTitle = isRenderFn(column.renderTitle)
         const isFocus = i === focusedCol
         return <Cell
           key={i}
@@ -98,8 +98,9 @@ export const HeaderRow = React.memo(() => {
         >
           {
             isJsxTitle
-            ? (column.title as RenderTitle)({
-              rawData: '',
+            ? (column.renderTitle as RenderTitle)({
+              id: column.id,
+              title: column.title as string,
               setColumnData: (str: string) => handleColumnUpdata(str, i),
               setEditCol,
               focused: isFocus,
@@ -107,7 +108,8 @@ export const HeaderRow = React.memo(() => {
             })
             : isFocus 
               ? <EditComponent
-                rawData={column.title as string}
+                id={column.id}
+                title={column.title as string}
                 setColumnData={(str) => handleColumnUpdata(str, i)}
                 setEditCol={setEditCol}
                 focused

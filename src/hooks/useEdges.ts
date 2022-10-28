@@ -2,6 +2,11 @@ import React, { useEffect } from 'react'
 import { throttle } from 'throttle-debounce'
 import { useDeepEqualState } from './useDeepEqualState'
 
+interface ThrottleScrollPacking {
+  (this: HTMLElement, ev: Event): any;
+  cancel: Function
+}
+
 export const useEdges = (
   ref: React.RefObject<HTMLElement>,
   width?: number,
@@ -15,7 +20,7 @@ export const useEdges = (
   })
 
   useEffect(() => {
-    const onScroll = throttle(100, () => {
+    const onScroll = throttle(100, false, () => {
       setEdges({
         top: ref.current?.scrollTop === 0,
         right:
@@ -26,7 +31,7 @@ export const useEdges = (
           (ref.current?.scrollHeight ?? 0) - (height ?? 0) - 1,
         left: ref.current?.scrollLeft === 0,
       })
-    })
+    }) as ThrottleScrollPacking
 
     const current = ref.current
     current?.addEventListener('scroll', onScroll)
@@ -34,7 +39,7 @@ export const useEdges = (
 
     return () => {
       current?.removeEventListener('scroll', onScroll)
-      onScroll.cancel()
+      onScroll.cancel && onScroll.cancel()
     }
   }, [height, width, ref, setEdges])
 

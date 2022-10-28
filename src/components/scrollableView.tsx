@@ -2,9 +2,10 @@ import cx from 'classnames'
 import React, { HTMLAttributes, useContext, useMemo } from 'react'
 import { SelectionContext } from '../contexts/SelectionContext'
 
-const ScrollableView = (props: {
+const ScrollableView = React.memo((props: {
   style: React.CSSProperties
 } & HTMLAttributes<HTMLDivElement>) => {
+  // console.log('ScrollableView')
   const { style, className, ...rest } = props
   const {
     columnWidths,
@@ -90,7 +91,9 @@ const ScrollableView = (props: {
     />
   </div>
 </div>
-}
+})
+
+ScrollableView.displayName = 'ScrollableView'
 
 export {
   ScrollableView

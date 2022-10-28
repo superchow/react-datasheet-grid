@@ -5,7 +5,7 @@ import {
   useContextMenu
 } from "react-contexify";
 import cx from 'classnames'
-import operationTypes, { DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
+import operationTypes, { DELETE_COLS, DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
 import { ContextMenuComponentProps, ContextMenuItem } from '../types'
 
 
@@ -26,6 +26,14 @@ const renderItem = (item: ContextMenuItem) => {
     return (
       <>
         复制 <b>{item.fromRow}</b> 到 <b>{item.toRow}</b> 行
+      </>
+    )
+  }
+
+  if (item.type === DELETE_COLS) {
+    return (
+      <>
+        删除 <b>{item.fromCol}</b> 到 <b>{item.toCol}</b> 列
       </>
     )
   }

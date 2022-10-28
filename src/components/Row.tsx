@@ -1,11 +1,12 @@
 import { areEqual, ListChildComponentProps } from 'react-window'
-import { ListItemData, RowProps } from '../types'
+import { DataSheetRow, ListItemData, RowProps } from '../types'
 import React, { HTMLAttributes, useCallback, useContext } from 'react'
 import cx from 'classnames'
 import { Cell } from './Cell'
 import { useFirstRender } from '../hooks/useFirstRender'
-import { omit } from 'lodash'
+import { cloneDeep, cloneDeepWith, omit } from 'lodash'
 import { SelectionContext } from '../contexts/SelectionContext'
+import deepEqual from 'fast-deep-equal'
 
 const nullfunc = () => null
 
@@ -42,7 +43,7 @@ const RowComponent = React.memo(
     const renderLight = isScrolling && firstRender
 
     const setGivenRowData = useCallback(
-      (rowData: any) => {
+      (rowData: DataSheetRow) => {
         setRowData(index, rowData)
       },
       [index, setRowData]
@@ -142,12 +143,24 @@ const RowComponent = React.memo(
             cellStyle.flexGrow = 0
           }
           if (renderColspan !== 1) {
-            if ('minWidth' in column) {
-              cellStyle.minWidth = column.minWidth * renderColspan
-            }
-            if ('maxWidth' in column) {
-              cellStyle.minWidth = column.maxWidth! * renderColspan
-            }
+            const mergeColumns = columns.slice(i + 1, i + renderColspan)
+            const mergeMinWidth = mergeColumns.map(it => it.minWidth ?? 0)
+              .reduce((pre, cur) => {
+                return pre + cur
+              }, column.minWidth ?? 0)
+            const mergeMaxWidth = mergeColumns.map(it => it.maxWidth ?? 0)
+              .reduce((pre, cur) => {
+                return pre + cur
+              }, column.maxWidth ?? 0)
+
+            cellStyle.minWidth = mergeMinWidth
+            cellStyle.maxWidth = mergeMaxWidth
+            // if ('minWidth' in column) {
+            //   cellStyle.minWidth = column.minWidth * renderColspan
+            // }
+            // if ('maxWidth' in column) {
+            //   cellStyle.maxWidth = column.maxWidth! * renderColspan
+            // }
           }
           
           const setKeyData = (value: string | number) => {
@@ -160,6 +173,7 @@ const RowComponent = React.memo(
               key={i}
               gutter={i === 0}
               disabled={renderDisabled}
+              readonly={renderReadonly}
               stickyRight={hasStickyRightColumn && i === columns.length - 1}
               column={column}
               rowData={data}
@@ -170,7 +184,8 @@ const RowComponent = React.memo(
                   ? cellClassName({ rowData: data, rowIndex: index })
                   : cellClassName,
                 (renderColspan > 1) && 'dsg-cell-colspan',
-                (renderRowspan > 1) && 'dsg-cell-rowspan'
+                (renderRowspan > 1) && 'dsg-cell-rowspan',
+                isHidden && 'dsg-cell-hidden'
               )}
               style={cellStyle}
               colSpan={renderColspan}
@@ -180,11 +195,13 @@ const RowComponent = React.memo(
                 row: index,
                 col: i
               })}
+              data-column={columnData?.key}
               data-v={isHidden ? undefined : formatValue(data[columnData?.key])}
             >
               {(renderWhenScrolling || !renderLight) && (
                 <Component
                   {...restColumnProps}
+                  originalRowData={data}
                   rowData={data}
                   getContextMenuItems={getContextMenuItems}
                   align={align}
@@ -224,7 +241,7 @@ const RowComponent = React.memo(
 
 RowComponent.displayName = 'RowComponent'
 
-export const Row = <T extends any>({
+export const Row = <T extends DataSheetRow>({
   index,
   style,
   data,
@@ -239,8 +256,43 @@ export const Row = <T extends any>({
     data: datas,
     stopEditing,
     activeCell,
+    setRowData,
+    setRowsData,
     ...restProps
   } = data
+
+  const setEffectRowData = useCallback((
+    rowIndex: number, item: T
+  ) => {
+    const oldData = datas[rowIndex]
+    const effectKeys = Object.keys(item).filter(key => !deepEqual(oldData[key], item[key]))
+    const effectColKeys: string[] = restProps.columns.filter(col => {
+      const key = col.id || col.columnData?.key
+      const hasKey = effectKeys.includes(key)
+      if (!hasKey) return false
+      const rowspan = oldData.rowspan ? oldData.rowspan[key] ?? 1 : 1;
+      return rowspan > 1
+    }).map(col => col.id || col.columnData?.key)
+
+    if (!effectColKeys.length) {
+      setRowData(rowIndex, item)
+    } else {
+      const effectLen = Math.max(...effectColKeys.map(key => oldData.rowspan ? oldData.rowspan[key] ?? 1 : 1))
+      const effectItems = datas.slice(rowIndex, rowIndex + effectLen).map((cell, idx) => {
+        const newCell = cloneDeep(cell)
+        effectColKeys.forEach(k => {
+          const rowspan = oldData.rowspan ? oldData.rowspan[k] ?? 1 : 1;
+          // Prevent out of bounds modification
+          if (idx < rowspan) {
+            // @ts-ignore
+            newCell[k] = item[k]
+          }
+        })
+        return newCell
+      })
+      setRowsData(rowIndex, effectItems)
+    }
+  }, [setRowData, setRowsData, datas, restProps])
 
   return (
     <RowComponent
@@ -261,6 +313,8 @@ export const Row = <T extends any>({
         data.activeCell?.row === index - 1 ? data.activeCell.col : null
       }
       editing={Boolean(data.activeCell?.row === index - 1 && data.editing)}
+      setRowsData={setRowsData}
+      setRowData={setEffectRowData}
       stopEditing={
         data.activeCell?.row === index - 1 && data.editing
           ? data.stopEditing

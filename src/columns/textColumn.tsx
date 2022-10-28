@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Align, CellComponent, CellProps, Column, TextColumnOptions } from '../types'
 import cx from 'classnames'
 import { useFirstRender } from '../hooks/useFirstRender'
@@ -22,6 +22,8 @@ const TextComponent = React.memo<
     rowData,
     align: cellAlign,
     setCellData,
+    readonly,
+    disabled,
     columnData: {
       placeholder,
       align,
@@ -46,6 +48,7 @@ const TextComponent = React.memo<
       firstRender,
       // Timestamp of last focus (when focus becomes true) and last change (input change)
       // used to prevent un-necessary updates when value was not changed
+      value: rowData,
       focusedAt: 0,
       changedAt: 0,
       // This allows us to keep track of whether or not the user blurred the input using the Esc key
@@ -61,12 +64,20 @@ const TextComponent = React.memo<
       continuousUpdates,
       firstRender,
       // Keep the same values across renders
+      value: asyncRef.current.value,
       focusedAt: asyncRef.current.focusedAt,
       changedAt: asyncRef.current.changedAt,
       escPressed: asyncRef.current.escPressed,
     }
 
+    const isStatic = useMemo(() => {
+      return readonly || disabled || !focus
+    }, [focus, readonly, disabled])
+
     useLayoutEffect(() => {
+      if (isStatic) {
+        return
+      }
       // When the cell gains focus we make sure to immediately select the text in the input:
       // - If the user gains focus by typing, it will replace the existing text, as expected
       // - If the user gains focus by clicking or pressing Enter, the text will be preserved and selected
@@ -76,7 +87,7 @@ const TextComponent = React.memo<
           ref.current.value = asyncRef.current.formatInputOnFocus(
             asyncRef.current.rowData
           )
-          // 选中状态时，再次点击将取消选中并移动光标到文字末尾
+          // When the status is selected, click again to deselect and move the cursor to the end of the text
           if (ref.current === document.activeElement) {
             const len = ref.current.value?.length || 0
             ref.current.setSelectionRange && ref.current.setSelectionRange(len, len)
@@ -107,22 +118,31 @@ const TextComponent = React.memo<
               asyncRef.current.parseUserInput(ref.current.value)
             )
           }
-          // 修复点击后立即失焦
+          // Repair immediate out of focus after clicking
           if (Date.now() - asyncRef.current.focusedAt > 60) {
             ref.current.blur()
           }
+        } else {
+          // fix Safari do not fire bulr event
+          asyncRef.current.setCellData(
+            asyncRef.current.parseUserInput(asyncRef.current.value || '')
+          )
         }
       }
-    }, [focus])
+    }, [focus, isStatic])
 
     useEffect(() => {
+      if (isStatic) {
+        return
+      }
       if (!focus && ref.current) {
         // On blur or when the data changes, format it for display
         ref.current.value = asyncRef.current.formatBlurredInput(rowData)
       }
-    }, [focus, rowData])
+    }, [focus, rowData, isStatic])
 
-    return !focus ? <div className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`)}>
+
+    return isStatic ? <div className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`, formatBlurredInput(rowData) ? null : 'dsg-input-empty')} dsg-input-placeholder={placeholder}>
       <span>{formatBlurredInput(rowData)}</span>
     </div> : (
       <input
@@ -138,6 +158,7 @@ const TextComponent = React.memo<
         // and the user cannot click and edit the input (this part is handled by DataSheetGrid itself)
         style={{ pointerEvents: focus ? 'auto' : 'none' }}
         onChange={(e) => {
+          asyncRef.current.value = e.target.value
           asyncRef.current.changedAt = Date.now()
         }}
         onBlur={(e) => {

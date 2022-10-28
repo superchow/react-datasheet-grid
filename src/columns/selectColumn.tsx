@@ -198,7 +198,6 @@ export const SelectComponent = React.memo(
         asyncRef.current.escPressed = false
         asyncRef.current.focusedAt = Date.now()
       } else {
-        console.log(asyncRef.current.focusedAt, Date.now() - asyncRef.current.focusedAt)
         if (Date.now() - asyncRef.current.focusedAt > 60 || ref.current?.state.isFocused) {
           ref.current?.blur()
         }

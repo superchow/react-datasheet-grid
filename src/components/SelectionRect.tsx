@@ -51,11 +51,7 @@ export const SelectionRect = React.memo(() => {
     activeCell,
     hasStickyRightColumn,
     dataLength,
-    viewWidth,
-    viewHeight,
     contentWidth,
-    contentHeight,
-    edges,
     isCellDisabled,
     isCellReadonly,
     getActiveCellRect,
@@ -90,9 +86,6 @@ export const SelectionRect = React.memo(() => {
   }
 
   const extraPixelV = (rowI: number): number => {
-    if (contentHeight && viewHeight && viewHeight > contentHeight) {
-      return viewHeight - contentHeight
-    }
     return rowI < dataLength - 1 ? 1 : 0
   }
 
@@ -122,7 +115,7 @@ export const SelectionRect = React.memo(() => {
     width:
       columnWidths
         .slice(selection.min.col + 1, selection.max.col + 2)
-        .reduce((a, b) => a + b) + extraPixelH(selection.max.col),
+        .reduce((a, b) => a + b, 0) + extraPixelH(selection.max.col),
     height:
       rowHeight * (selection.max.row - selection.min.row + 1) +
       extraPixelV(selection.max.row),
@@ -150,7 +143,7 @@ export const SelectionRect = React.memo(() => {
       width:
         columnWidths
           .slice(minSelection.col + 1, maxSelection.col + 2)
-          .reduce((a, b) => a + b) + extraPixelH(maxSelection.col),
+          .reduce((a, b) => a + b, 0) + extraPixelH(maxSelection.col),
       height:
         rowHeight * expandSelection +
         extraPixelV(maxSelection.row + expandSelection) -

@@ -1,9 +1,18 @@
-import { Cell, Column } from '../types'
+import { Cell, Column, DataSheetRow } from '../types'
 import { useEffect, useMemo, useState } from 'react'
 import { useDeepEqualState } from './useDeepEqualState'
 
+const getRenderHash = (columns: Column<any, any, any>[], data: Array<DataSheetRow>, activeCell?: Cell|null) => {
+  const colStr = columns.map(({ width, minWidth, maxWidth }) =>
+    [width, minWidth, maxWidth].join(',')
+  ).join('|')
+  const dataHash = data.map(it => it.__hash).join('|')
+  const col = activeCell?.col
+  return colStr+dataHash+col
+}
+
 export const useColumnHeights = (
-  data: Array<any>,
+  data: Array<DataSheetRow>,
   supportRowspan: boolean = false,
   columns: Column<any, any, any>[],
   rowHeight: number,
@@ -16,6 +25,9 @@ export const useColumnHeights = (
     number[] | undefined
   >(undefined)
   const [prevHeight, setPrevHeight] = useState(height)
+  const [preRenderHash, setPreRenderHash] = useState(
+    getRenderHash(columns, data, activeCell)
+  )
 
   const { totalHeight, columnRowTops } = useMemo(() => {
     if (!columnHeights) {
@@ -48,6 +60,14 @@ export const useColumnHeights = (
     if (height === undefined) {
       return
     }
+    // check diff
+    const renderHash = getRenderHash(columns, data, activeCell)
+    if (preRenderHash !== renderHash) {
+      setPreRenderHash(renderHash)
+    } else {
+      return
+    }
+
     const len = data.length
     if (!container || !activeCell) {
       const columnsData = new Array(len).fill(rowHeight, 0, len - 1)
@@ -55,13 +75,13 @@ export const useColumnHeights = (
       return
     }
     const list: number[][] = []
-    data.forEach((item) => {
+    data.forEach((item, index) => {
       const colData:number[] = []
       columns.forEach(column => {
         const rowspan = supportRowspan 
           ? typeof column.rowspan === 'function'
-            ? column.rowspan(item)
-            : column.rowspan || 1
+            ? column.rowspan(item, index)
+            : column.rowspan ?? 1
           : 1
         colData.push(rowHeight * rowspan)
       })
@@ -87,7 +107,7 @@ export const useColumnHeights = (
     setColumnHeights(reslut)
     
     setPrevHeight(height)
-  }, [height, activeCell])
+  }, [height, preRenderHash, data, columns, activeCell])
 
   return {
     fullHeight: Math.abs((prevHeight ?? 0) - (totalHeight ?? 0)) < 0.1,

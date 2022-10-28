@@ -16,6 +16,7 @@ export const StaticDataSheetGrid = React.forwardRef<
       createRow,
       duplicateRow,
       style,
+      rowKey,
       onFocus,
       onBlur,
       onActiveCellChange,
@@ -33,6 +34,7 @@ export const StaticDataSheetGrid = React.forwardRef<
       createRow,
       duplicateRow,
       style,
+      rowKey,
       onFocus,
       onBlur,
       onActiveCellChange,
@@ -45,3 +47,7 @@ export const StaticDataSheetGrid = React.forwardRef<
 ) as <T extends any>(
   props: DataSheetGridProps<T> & { ref?: React.ForwardedRef<DataSheetGridRef> }
 ) => JSX.Element
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+StaticDataSheetGrid.displayName = 'StaticDataSheetGrid'

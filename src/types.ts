@@ -10,7 +10,6 @@ export type DataSheetRow = {
   colspan?: {
     [k: string]: number
   }
-  __hash?: string
   [k: string]: any
 }
 
@@ -24,6 +23,7 @@ export type Align = "left" | "center" | "right";
 export type Selection = { min: Cell; max: Cell };
 
 export type CellProps<T, C> = {
+  originalRowData: T;
   rowData: T;
   rowIndex: number;
   columnIndex: number;
@@ -34,7 +34,7 @@ export type CellProps<T, C> = {
   readonly: boolean;
   columnData: C;
   setRowData: (rowData: DataSheetRow) => void;
-  setCellData: (cellData: T) => void;
+  setCellData: (cellData: any) => void;
   stopEditing: (opts?: { nextRow: boolean }) => void;
   insertRowBelow: () => void;
   duplicateRow: () => void;
@@ -42,7 +42,7 @@ export type CellProps<T, C> = {
   getContextMenuItems: () => ContextMenuItem[];
 };
 
-export type CellComponent<T, C> = (props: CellProps<T, C>) => JSX.Element;
+export type CellComponent<T, C> = (props: CellProps<T, C> & Record<string, any>) => JSX.Element;
 
 export type ColumnType = 's' | 'n' | 'd' | 'f' | 'b' | 'o'
 
@@ -68,24 +68,28 @@ export type TextColumnOptions<T> = {
 export type KeyColumnData<K, C, P> = { key: string; original: Partial<Column<K, C, P>> }
 
 // TODO
-export type RenderTitleProps = {
-  rawData?: string;
+export type RenderTitleProps<T extends string|number|boolean = any> = {
+  id: string|undefined
+  title?: T;
   setColumnData: (str: string) => void;
   setEditCol: (value: number) => void
   focused?: boolean;
 } & Partial<TextColumnOptions<string>>
-export type RenderTitle = (props: RenderTitleProps) => React.ReactNode;
+export type RenderTitle<T extends string|number|boolean = any> = (props: RenderTitleProps<T>) => React.ReactNode;
 
 export type Column<T, C, PasteValue, U = any> = {
   id?: string;
   headerClassName?: string;
-  title?: React.ReactNode | RenderTitle;
+  title?: React.ReactNode;
+  renderTitle?: RenderTitle;
   width: ColumnWidth;
   minWidth: number;
   maxWidth?: number;
   /** @todo */
   hideWhenColspanZero?: boolean | ((data: T, rowIndex: number) => boolean);
   colspan?: number | ((data: T, rowIndex: number) => number);
+  /** support rowspan, default is true */
+  supportRowspan?: boolean;
   rowspan?: number | ((data: T, rowIndex: number) => number);
   align?: Align;
   renderWhenScrolling: boolean;
@@ -96,6 +100,10 @@ export type Column<T, C, PasteValue, U = any> = {
   disableKeys: boolean;
   /** disable ColumnOperation */
   disableColumnOperation?: boolean;
+  disableColumnOperationBefore?: boolean;
+  disableColumnOperationAfter?: boolean;
+  /** disable Column's rowspanOperation */
+  disableRowOperation?: boolean;
   disabled: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
   readonly?: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
   cellClassName?:
@@ -111,7 +119,7 @@ export type Column<T, C, PasteValue, U = any> = {
   [k: `config-${string}`]: U
 };
 
-export type ListItemData<T> = {
+export type ListItemData<T extends DataSheetRow> = {
   data: T[];
   contentWidth?: number;
   columns: Column<T, any, string>[];
@@ -121,6 +129,7 @@ export type ListItemData<T> = {
   selectionMaxRow?: number;
   editing: boolean;
   setRowData: (rowIndex: number, item: T) => void;
+  setRowsData: (startRowIndex: number, items: T[]) => void;
   deleteRows: (rowMin: number, rowMax?: number) => void;
   duplicateRows: (rowMin: number, rowMax?: number) => void;
   insertRowAfter: (row: number, count?: number) => void;
@@ -188,7 +197,7 @@ export type SelectionContextType = {
   expandSelection: number | null;
 };
 
-export type RowProps<T> = Omit<ListItemData<T>, 'data'|'activeCell'> & {
+export type RowProps<T extends DataSheetRow> = Omit<ListItemData<T>, 'data'|'activeCell'> & {
   index: number;
   data: T;
   style: React.CSSProperties;
@@ -223,14 +232,19 @@ export type ContextMenuItem =
   | {
       type: 
         | "DELETE_ROWS" 
-        | "DUPLICATE_ROWS" 
-        | 'DELETE_COLS' 
+        | "DUPLICATE_ROWS"
         | 'MERGE_ROWS'
         | 'CLEAR_MERGE_ROWS';
       action: () => void;
       fromRow: number;
       toRow: number;
-    };
+    }
+  | {
+    type: 'DELETE_COLS'
+    action: () => void;
+    fromCol: number;
+    toCol: number;
+  }
 
 export type ContextMenuComponentProps = {
   id: string | number;
@@ -279,6 +293,7 @@ export type DataSheetGridProps<T> = {
   ) => void;
   gutterColumn?: SimpleColumn<T, any> | false;
   stickyRightColumn?: SimpleColumn<T, any>;
+  widthModel?: 'full';
   height?: number;
   rowHeight?: number;
   /** Head editable
@@ -286,10 +301,12 @@ export type DataSheetGridProps<T> = {
    */
   headerEditable?: boolean;
   headerRowHeight?: number;
+  rowKey?: string | ((rowData: T, index: number, data: T[]) => string)
   addRowsComponent?: (props: AddRowsComponentProps) => JSX.Element;
   createRow?: () => T;
   duplicateRow?: (opts: { rowData: T; rowIndex: number }) => T;
   autoAddRow?: boolean;
+  autoAddColumn?: boolean;
   /** @default false */
   lockRows?: boolean;
   showAddRows?: boolean;
@@ -325,5 +342,7 @@ export type DataSheetGridRef = {
   setActiveCell: (activeCell: CellWithIdInput | null) => void;
   setSelection: (selection: SelectionWithIdInput | null) => void;
   target: HTMLDivElement | null;
+  getTable: () => HTMLTableElement | undefined
   getSheet: () => WorkSheet | undefined
+  getTableData: () => Record<string|number, any>[] | null
 };

@@ -4,7 +4,7 @@ const TEN_TO_THE_12 = 1000000000000
 const TEN_TO_THE_10 = 10000000000
 
 export const percentColumn = createTextColumn<number | null>({
-  alignRight: true,
+  align: 'right',
   formatBlurredInput: (value) =>
     typeof value === 'number'
       ? new Intl.NumberFormat(undefined, { style: 'percent' }).format(value)

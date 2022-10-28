@@ -1,5 +1,5 @@
 import { ColInfo, utils, WorkSheet } from "xlsx";
-import { DataSheetRow } from "../types";
+import { Column, DataSheetRow } from "../types";
 
 export function getSheetCols(rawSheet: WorkSheet): ColInfo[] {
   if (!rawSheet) { return [] }
@@ -73,6 +73,18 @@ export function sheetToJson<T extends DataSheetRow>(rawSheet: WorkSheet): T[] {
 
     return list.map(({ __rowNum__, ...rest }) => (rest as unknown as T));
   }
+}
+
+/** Output sheetData according to columns */
+export function formatDataSheetData<T extends DataSheetRow>(list: T[], columns: Partial<Column<T, any, any>>[]): T[] {
+  return list?.map(raw => {
+    const row: T = {} as T
+    columns.forEach(col => {
+      // @ts-ignore
+      row[col.title] = raw[col.id!]
+    })
+    return row
+  })
 }
 
 export { utils as xlsxUtils };
