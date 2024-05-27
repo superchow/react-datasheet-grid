@@ -1,12 +1,13 @@
+import cx from 'classnames'
 import React, { useContext, useMemo } from 'react'
 import { SelectionContext } from '../contexts/SelectionContext'
-import cx from 'classnames'
+import { Cell, Selection, SelectionContextType } from '../types'
 
 const buildSquare = (
   top: number | string,
   right: number | string,
   bottom: number | string,
-  left: number | string
+  left: number | string,
 ) => {
   return [
     [left, top],
@@ -21,7 +22,7 @@ const buildClipPath = (
   top: number,
   right: number,
   bottom: number,
-  left: number
+  left: number,
 ) => {
   const values = [
     ...buildSquare(0, '100%', '100%', 0),
@@ -32,16 +33,49 @@ const buildClipPath = (
     .map((pair) =>
       pair
         .map((value) =>
-          typeof value === 'number' && value !== 0 ? value + 'px' : value
+          typeof value === 'number' && value !== 0 ? value + 'px' : value,
         )
-        .join(' ')
+        .join(' '),
     )
     .join(',')})`
 }
 
-export const SelectionRect = React.memo(() => {
+/** 是否可以选中区域 */
+function isSelectionDisabled(
+  selection: Selection,
+  isCellDisabled: (cell: Cell) => boolean,
+) {
+  let flag = true
+  for (let col = selection.min.col; col <= selection.max.col; ++col) {
+    if (!flag) {
+      break
+    }
+    for (let row = selection.min.row; row <= selection.max.row; ++row) {
+      if (!isCellDisabled({ col, row })) {
+        flag = false
+        break
+      }
+    }
+  }
+  return flag
+}
+
+type InterSelectionRectProps = Omit<
+  SelectionContextType,
+  | 'showSelection'
+  | 'edges'
+  | 'getActiveCellRowData'
+  | 'getActiveCellBoundingClientRect'
+  | 'columnRowTops'
+> & {
+  columnRights: number[]
+  columnWidths: number[]
+  // columnRowTops: number[]
+  // columnRowHeights: number[];
+}
+
+const InterSelectionRect = React.memo((props: InterSelectionRectProps) => {
   const {
-    showSelection,
     columnWidths,
     columnRights,
     headerRowHeight,
@@ -57,33 +91,18 @@ export const SelectionRect = React.memo(() => {
     getActiveCellRect,
     editing,
     expandSelection,
-  } = useContext(SelectionContext)
-  if (!showSelection) {
-    return <></>
-  }
+  } = props
 
   const activeCellIsDisabled = activeCell ? isCellDisabled(activeCell) : false
   const activeCellIsReadonly = activeCell ? isCellReadonly(activeCell) : false
 
   const selectionIsDisabled = useMemo(() => {
     if (!selection) {
-      return activeCellIsDisabled
+      return activeCell ? isCellDisabled(activeCell) : false
+    } else {
+      return isSelectionDisabled(selection, isCellDisabled)
     }
-
-    for (let col = selection.min.col; col <= selection.max.col; ++col) {
-      for (let row = selection.min.row; row <= selection.max.row; ++row) {
-        if (!isCellDisabled({ col, row })) {
-          return false
-        }
-      }
-    }
-
-    return true
-  }, [activeCellIsDisabled, isCellDisabled, selection])
-
-  if (!columnWidths || !columnRights) {
-    return null
-  }
+  }, [selection, activeCell, isCellDisabled])
 
   const extraPixelV = (rowI: number): number => {
     return rowI < dataLength - 1 ? 1 : 0
@@ -99,17 +118,21 @@ export const SelectionRect = React.memo(() => {
     if (columnRowHeights[row]) {
       return columnRowHeights[row]
     } else {
-      return columnRowHeights.slice(0, row).reverse().find(a => a > 0)!
+      return columnRowHeights
+        .slice(0, row)
+        .reverse()
+        .find((a) => a > 0)!
     }
   }
 
   const activeClientRect = getActiveCellRect()
-  const activeCellRect = activeCell && activeClientRect && {
-    width: activeClientRect.width + extraPixelH(activeCell.col),
-    height: extraHeight(activeCell.row) + extraPixelV(activeCell.row),
-    left: activeClientRect.left,
-    top: activeClientRect.top,
-  }
+  const activeCellRect = activeCell &&
+    activeClientRect && {
+      width: activeClientRect.width + extraPixelH(activeCell.col),
+      height: extraHeight(activeCell.row) + extraPixelV(activeCell.row),
+      left: activeClientRect.left,
+      top: activeClientRect.top,
+    }
 
   const selectionRect = selection && {
     width:
@@ -156,17 +179,16 @@ export const SelectionRect = React.memo(() => {
     <>
       {(selectionRect || activeCellRect) && (
         <div
-          className="dsg-selection-col-marker-container"
+          className='dsg-selection-col-marker-container'
           style={{
             left: selectionRect?.left ?? activeCellRect?.left,
             width: selectionRect?.width ?? activeCellRect?.width,
             height: dataLength * rowHeight + headerRowHeight,
-          }}
-        >
+          }}>
           <div
             className={cx(
               'dsg-selection-col-marker',
-              selectionIsDisabled && 'dsg-selection-col-marker-disabled'
+              selectionIsDisabled && 'dsg-selection-col-marker-disabled',
             )}
             style={{ top: headerRowHeight }}
           />
@@ -174,38 +196,40 @@ export const SelectionRect = React.memo(() => {
       )}
       {(selectionRect || activeCellRect) && (
         <div
-          className="dsg-selection-row-marker-container"
+          className='dsg-selection-row-marker-container'
           style={{
             top: selectionRect?.top ?? activeCellRect?.top,
             height: selectionRect?.height ?? activeCellRect?.height,
             width: contentWidth ? contentWidth : '100%',
-          }}
-        >
+          }}>
           <div
             className={cx(
               'dsg-selection-row-marker',
-              selectionIsDisabled && 'dsg-selection-row-marker-disabled'
+              selectionIsDisabled && 'dsg-selection-row-marker-disabled',
             )}
             style={{ left: columnWidths[0] }}
           />
         </div>
       )}
-      {activeCellRect && activeCell && !activeCellIsReadonly && !!activeClientRect.width && (
-        <div
-          className={cx('dsg-active-cell', {
-            'dsg-active-cell-focus': editing,
-            'dsg-active-cell-disabled': activeCellIsDisabled,
-            'dsg-active-cell-readonly': activeCellIsReadonly
-          })}
-          style={activeCellRect}
-          data-cell={JSON.stringify(activeCell)}
-        />
-      )}
+      {activeCellRect &&
+        activeCell &&
+        !activeCellIsReadonly &&
+        !!activeClientRect.width && (
+          <div
+            className={cx('dsg-active-cell', {
+              'dsg-active-cell-focus': editing,
+              'dsg-active-cell-disabled': activeCellIsDisabled,
+              'dsg-active-cell-readonly': activeCellIsReadonly,
+            })}
+            style={activeCellRect}
+            data-cell={JSON.stringify(activeCell)}
+          />
+        )}
       {selectionRect && activeCellRect && (
         <div
           className={cx(
             'dsg-selection-rect',
-            selectionIsDisabled && 'dsg-selection-rect-disabled'
+            selectionIsDisabled && 'dsg-selection-rect-disabled',
           )}
           style={{
             ...selectionRect,
@@ -213,7 +237,7 @@ export const SelectionRect = React.memo(() => {
               activeCellRect.top - selectionRect.top,
               activeCellRect.left - selectionRect.left,
               activeCellRect.top + activeCellRect.height - selectionRect.top,
-              activeCellRect.left + activeCellRect.width - selectionRect.left
+              activeCellRect.left + activeCellRect.width - selectionRect.left,
             ),
           }}
         />
@@ -225,12 +249,57 @@ export const SelectionRect = React.memo(() => {
         <div
           className={cx(
             'dsg-expand-rows-indicator',
-            selectionIsDisabled && 'dsg-expand-rows-indicator-disabled'
+            selectionIsDisabled && 'dsg-expand-rows-indicator-disabled',
           )}
           style={expandRowsIndicator}
         />
       )}
     </>
+  )
+})
+
+export const SelectionRect = React.memo(() => {
+  const {
+    showSelection,
+    columnWidths,
+    columnRights,
+    headerRowHeight,
+    columnRowHeights,
+    selection,
+    rowHeight,
+    activeCell,
+    hasStickyRightColumn,
+    dataLength,
+    contentWidth,
+    isCellDisabled,
+    isCellReadonly,
+    getActiveCellRect,
+    editing,
+    expandSelection,
+  } = useContext(SelectionContext)
+
+  if (!showSelection || !columnWidths || !columnRights) {
+    return <></>
+  }
+
+  return (
+    <InterSelectionRect
+      columnWidths={columnWidths}
+      columnRights={columnRights}
+      headerRowHeight={headerRowHeight}
+      columnRowHeights={columnRowHeights}
+      selection={selection}
+      rowHeight={rowHeight}
+      activeCell={activeCell}
+      hasStickyRightColumn={hasStickyRightColumn}
+      dataLength={dataLength}
+      contentWidth={contentWidth}
+      isCellDisabled={isCellDisabled}
+      isCellReadonly={isCellReadonly}
+      getActiveCellRect={getActiveCellRect}
+      editing={editing}
+      expandSelection={expandSelection}
+    />
   )
 })
 

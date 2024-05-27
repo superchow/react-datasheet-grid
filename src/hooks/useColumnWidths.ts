@@ -1,18 +1,18 @@
-import { Cell, Column, DataSheetRow } from '../types'
 import { useEffect, useMemo, useState } from 'react'
+import { Cell, Column, DataSheetRow } from '../types'
 import { useDeepEqualState } from './useDeepEqualState'
 
-const getRenderHash = (width: number ,columns: Column<any, any, any>[], data: Array<DataSheetRow>, activeCell?: Cell|null) => {
+const getRenderHash = (width: number, columns: Column<any, any, any>[], data: Array<DataSheetRow>, activeCell?: Cell | null) => {
   const colStr = columns.map(({ width, minWidth, maxWidth }) =>
     [width, minWidth, maxWidth].join(',')
   ).join('|')
   const dataHash = data.map(it => it.__hash).join('|')
-  const activeCellStr = typeof activeCell === 'object' 
-    ? activeCell === null 
+  const activeCellStr = typeof activeCell === 'object'
+    ? activeCell === null
       ? null : 'object'
     : undefined
   const row = activeCell?.row
-  return width+colStr+dataHash+activeCellStr+row
+  return width + colStr + dataHash + activeCellStr + row
 }
 
 export const useColumnWidths = (
@@ -20,7 +20,7 @@ export const useColumnWidths = (
   supportColspan: boolean = false,
   columns: Column<any, any, any>[],
   width?: number,
-  activeCell?: Cell|null,
+  activeCell?: Cell | null,
 ) => {
   const [columnWidths, setColumnWidths] = useDeepEqualState<
     number[] | undefined
@@ -128,7 +128,7 @@ export const useColumnWidths = (
     setPrevWidth(width)
 
     el.remove()
-  }, [width, preRenderHash, supportColspan, data, activeCell])
+  }, [width, columns, supportColspan, data, activeCell, preRenderHash])
 
   return {
     fullWidth: Math.abs((prevWidth ?? 0) - (totalWidth ?? 0)) < 0.1,

@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from 'react'
 import { CellComponent, Column, KeyColumnData } from '../types'
 
-const KeyComponent: CellComponent<any, KeyColumnData<any, any, any>> = ({
+const KeyComponent: CellComponent<any, any, KeyColumnData<any, any, any>> = ({
   columnData: { key, original },
   rowData,
   setRowData,
@@ -37,14 +37,16 @@ const KeyComponent: CellComponent<any, KeyColumnData<any, any, any>> = ({
       setCellData={setKeyData}
       // We only pass the value of the desired key, this is why each cell does not have to re-render everytime
       // another cell in the same row changes!
-      rowData={rowData[key]}
+      cellData={rowData[key]}
+      originalRowData={rowData}
+      rowData={rowData}
       {...rest}
     />
   )
 }
 
 export const keyColumn = <
-  T extends Record<string|number, any>,
+  T extends Record<string | number, any>,
   K extends keyof T = keyof T,
   PasteValue = string
 >(
@@ -78,13 +80,13 @@ export const keyColumn = <
         }
       : column.disabled,
   readonly:
-      typeof column.readonly === 'function'
-        ? ({ rowData, rowIndex }) => {
-            return typeof column.readonly === 'function'
-              ? column.readonly({ rowData: rowData[key], rowIndex })
-              : column.readonly ?? false
-          }
-        : column.readonly,
+    typeof column.readonly === 'function'
+      ? ({ rowData, rowIndex }) => {
+          return typeof column.readonly === 'function'
+            ? column.readonly({ rowData: rowData[key], rowIndex })
+            : column.readonly ?? false
+        }
+      : column.readonly,
   cellClassName:
     typeof column.cellClassName === 'function'
       ? ({ rowData, rowIndex }) => {

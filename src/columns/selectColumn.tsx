@@ -1,12 +1,34 @@
-import React, { FocusEventHandler, FormEventHandler, KeyboardEventHandler, MouseEventHandler, ReactNode, RefCallback, TouchEventHandler, useLayoutEffect, useRef } from 'react'
+import React, {
+  FocusEventHandler,
+  FormEventHandler,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  ReactNode,
+  RefCallback,
+  TouchEventHandler,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react'
 
-import Select, { GroupBase, Props, Options, OnChangeValue, ActionMeta, InputActionMeta, FocusDirection, SetValueAction, Theme, OptionsOrGroups, CSSObjectWithLabel } from 'react-select'
+import Select, {
+  ActionMeta,
+  CSSObjectWithLabel,
+  FocusDirection,
+  GroupBase,
+  InputActionMeta,
+  OnChangeValue,
+  Options,
+  OptionsOrGroups,
+  Props,
+  SetValueAction,
+  Theme,
+} from 'react-select'
+import { FormatOptionLabelContext } from 'react-select/dist/declarations/src/Select'
 import { AriaSelection } from 'react-select/dist/declarations/src/accessibility'
 import { FilterOptionOption } from 'react-select/dist/declarations/src/filters'
-import { FormatOptionLabelContext } from 'react-select/dist/declarations/src/Select'
 import { StylesProps } from 'react-select/dist/declarations/src/styles'
 import { CellProps, Column } from '../types'
-
 
 type Choice = {
   label: string
@@ -18,161 +40,225 @@ type SelectOptions = {
   disabled?: boolean
 }
 
-interface State<Option, IsMulti extends boolean, Group extends GroupBase<Option>> {
-  ariaSelection: AriaSelection<Option, IsMulti> | null;
-  inputIsHidden: boolean;
-  isFocused: boolean;
-  focusedOption: Option | null;
-  focusedValue: Option | null;
-  selectValue: Options<Option>;
-  clearFocusValueOnUpdate: boolean;
-  prevWasFocused: boolean;
-  inputIsHiddenAfterUpdate: boolean | null | undefined;
-  prevProps: Props<Option, IsMulti, Group> | void;
+interface State<
+  Option,
+  IsMulti extends boolean,
+  Group extends GroupBase<Option>
+> {
+  ariaSelection: AriaSelection<Option, IsMulti> | null
+  inputIsHidden: boolean
+  isFocused: boolean
+  focusedOption: Option | null
+  focusedValue: Option | null
+  selectValue: Options<Option>
+  clearFocusValueOnUpdate: boolean
+  prevWasFocused: boolean
+  inputIsHiddenAfterUpdate: boolean | null | undefined
+  prevProps: Props<Option, IsMulti, Group> | void
 }
 interface CategorizedGroup<Option, Group extends GroupBase<Option>> {
-  type: 'group';
-  data: Group;
-  options: readonly CategorizedOption<Option>[];
-  index: number;
+  type: 'group'
+  data: Group
+  options: readonly CategorizedOption<Option>[]
+  index: number
 }
 
 interface CategorizedOption<Option> {
-  type: 'option';
-  data: Option;
-  isDisabled: boolean;
-  isSelected: boolean;
-  label: string;
-  value: string;
-  index: number;
+  type: 'option'
+  data: Option
+  isDisabled: boolean
+  isSelected: boolean
+  label: string
+  value: string
+  index: number
 }
 
-type CategorizedGroupOrOption<Option, Group extends GroupBase<Option>> = CategorizedGroup<Option, Group> | CategorizedOption<Option>;
+type CategorizedGroupOrOption<Option, Group extends GroupBase<Option>> =
+  | CategorizedGroup<Option, Group>
+  | CategorizedOption<Option>
 
-type SelectRef<Option extends Choice, IsMulti extends boolean, Group extends GroupBase<Option>> =
-  JSX.LibraryManagedAttributes<typeof Select, {
-    state: State<Option, IsMulti, Group>;
-    blockOptionHover: boolean;
-    isComposing: boolean;
-    commonProps: any;
-    initialTouchX: number;
-    initialTouchY: number;
-    instancePrefix: string;
-    openAfterFocus: boolean;
-    scrollToFocusedOptionOnUpdate: boolean;
-    userIsDragging?: boolean;
-    controlRef: HTMLDivElement | null;
-    getControlRef: RefCallback<HTMLDivElement>;
-    focusedOptionRef: HTMLDivElement | null;
-    getFocusedOptionRef: RefCallback<HTMLDivElement>;
-    menuListRef: HTMLDivElement | null;
-    getMenuListRef: RefCallback<HTMLDivElement>;
-    inputRef: HTMLInputElement | null;
-    getInputRef: RefCallback<HTMLInputElement>;
-    componentDidMount(): void;
-    componentDidUpdate(prevProps: Props<Option, IsMulti, Group>): void;
-    componentWillUnmount(): void;
-    onMenuOpen(): void;
-    onMenuClose(): void;
-    onInputChange(newValue: string, actionMeta: InputActionMeta): void;
-    focusInput(): void;
-    blurInput(): void;
-    focus: () => void;
-    blur: () => void;
-    openMenu(focusOption: 'first' | 'last'): void;
-    focusValue(direction: 'previous' | 'next'): void;
-    focusOption(direction?: FocusDirection): void;
-    onChange: (newValue: OnChangeValue<Option, IsMulti>, actionMeta: ActionMeta<Option>) => void;
-    setValue: (newValue: OnChangeValue<Option, IsMulti>, action: SetValueAction, option?: Option | undefined) => void;
-    selectOption: (newValue: Option) => void;
-    removeValue: (removedValue: Option) => void;
-    clearValue: () => void;
-    popValue: () => void;
-    getTheme(): Theme;
-    getValue: () => Options<Option>;
-    cx: (...args: any) => string;
+type SelectRef<
+  Option extends Choice,
+  IsMulti extends boolean,
+  Group extends GroupBase<Option>
+> = JSX.LibraryManagedAttributes<
+  typeof Select,
+  {
+    state: State<Option, IsMulti, Group>
+    blockOptionHover: boolean
+    isComposing: boolean
+    commonProps: any
+    initialTouchX: number
+    initialTouchY: number
+    instancePrefix: string
+    openAfterFocus: boolean
+    scrollToFocusedOptionOnUpdate: boolean
+    userIsDragging?: boolean
+    controlRef: HTMLDivElement | null
+    getControlRef: RefCallback<HTMLDivElement>
+    focusedOptionRef: HTMLDivElement | null
+    getFocusedOptionRef: RefCallback<HTMLDivElement>
+    menuListRef: HTMLDivElement | null
+    getMenuListRef: RefCallback<HTMLDivElement>
+    inputRef: HTMLInputElement | null
+    getInputRef: RefCallback<HTMLInputElement>
+    componentDidMount(): void
+    componentDidUpdate(prevProps: Props<Option, IsMulti, Group>): void
+    componentWillUnmount(): void
+    onMenuOpen(): void
+    onMenuClose(): void
+    onInputChange(newValue: string, actionMeta: InputActionMeta): void
+    focusInput(): void
+    blurInput(): void
+    focus: () => void
+    blur: () => void
+    openMenu(focusOption: 'first' | 'last'): void
+    focusValue(direction: 'previous' | 'next'): void
+    focusOption(direction?: FocusDirection): void
+    onChange: (
+      newValue: OnChangeValue<Option, IsMulti>,
+      actionMeta: ActionMeta<Option>,
+    ) => void
+    setValue: (
+      newValue: OnChangeValue<Option, IsMulti>,
+      action: SetValueAction,
+      option?: Option | undefined,
+    ) => void
+    selectOption: (newValue: Option) => void
+    removeValue: (removedValue: Option) => void
+    clearValue: () => void
+    popValue: () => void
+    getTheme(): Theme
+    getValue: () => Options<Option>
+    cx: (...args: any) => string
     getCommonProps(): {
-      clearValue: () => void;
-      cx: (...args: any) => string;
-      getStyles: <Key extends keyof StylesProps<Option, IsMulti, Group>>(key: Key, props: StylesProps<Option, IsMulti, Group>[Key]) => CSSObjectWithLabel;
-      getValue: () => Options<Option>;
-      hasValue: boolean;
-      isMulti: IsMulti;
-      isRtl: boolean;
-      options: OptionsOrGroups<Option, Group>;
-      selectOption: (newValue: Option) => void;
-      selectProps: Readonly<Props<Option, IsMulti, Group>> & Readonly<{
-        children?: React.ReactNode;
-      }>;
-      setValue: (newValue: OnChangeValue<Option, IsMulti>, action: SetValueAction, option?: Option | undefined) => void;
-      theme: Theme;
-    };
-    getOptionLabel: (data: Option) => string;
-    getOptionValue: (data: Option) => string;
-    getStyles: <Key extends keyof StylesProps<Option, IsMulti, Group>>(key: Key, props: StylesProps<Option, IsMulti, Group>[Key]) => CSSObjectWithLabel;
-    getElementId: (element: 'group' | 'input' | 'listbox' | 'option' | 'placeholder' | 'live-region') => string;
-    buildCategorizedOptions: () => CategorizedGroupOrOption<Option, Group>[];
-    getCategorizedOptions: () => CategorizedGroupOrOption<Option, Group>[];
-    buildFocusableOptions: () => Option[];
-    getFocusableOptions: () => Option[];
-    ariaOnChange: (value: OnChangeValue<Option, IsMulti>, actionMeta: ActionMeta<Option>) => void;
-    hasValue(): boolean;
-    hasOptions(): boolean;
-    isClearable(): boolean;
-    isOptionDisabled(option: Option, selectValue: Options<Option>): boolean;
-    isOptionSelected(option: Option, selectValue: Options<Option>): boolean;
-    filterOption(option: FilterOptionOption<Option>, inputValue: string): boolean;
-    formatOptionLabel(data: Option, context: FormatOptionLabelContext): ReactNode;
-    formatGroupLabel(data: Group): React.ReactNode;
-    onMenuMouseDown: MouseEventHandler<HTMLDivElement>;
-    onMenuMouseMove: MouseEventHandler<HTMLDivElement>;
-    onControlMouseDown: (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
-    onDropdownIndicatorMouseDown: (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
-    onClearIndicatorMouseDown: (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
-    onScroll: (event: Event) => void;
-    startListeningComposition(): void;
-    stopListeningComposition(): void;
-    onCompositionStart: () => void;
-    onCompositionEnd: () => void;
-    startListeningToTouch(): void;
-    stopListeningToTouch(): void;
-    onTouchStart: ({ touches }: TouchEvent) => void;
-    onTouchMove: ({ touches }: TouchEvent) => void;
-    onTouchEnd: (event: TouchEvent) => void;
-    onControlTouchEnd: TouchEventHandler<HTMLDivElement>;
-    onClearIndicatorTouchEnd: TouchEventHandler<HTMLDivElement>;
-    onDropdownIndicatorTouchEnd: TouchEventHandler<HTMLDivElement>;
-    handleInputChange: FormEventHandler<HTMLInputElement>;
-    onInputFocus: FocusEventHandler<HTMLInputElement>;
-    onInputBlur: FocusEventHandler<HTMLInputElement>;
-    onOptionHover: (focusedOption: Option) => void;
-    shouldHideSelectedOptions: () => boolean | IsMulti;
-    onKeyDown: KeyboardEventHandler<HTMLDivElement>;
-    renderInput(): JSX.Element;
-    renderPlaceholderOrValue(): JSX.Element | JSX.Element[] | null;
-    renderClearIndicator(): JSX.Element | null;
-    renderLoadingIndicator(): JSX.Element | null;
-    renderIndicatorSeparator(): JSX.Element | null;
-    renderDropdownIndicator(): JSX.Element | null;
-    renderMenu(): JSX.Element | null;
-    renderFormField(): JSX.Element | undefined;
-    renderLiveRegion(): JSX.Element;
-  }>;
+      clearValue: () => void
+      cx: (...args: any) => string
+      getStyles: <Key extends keyof StylesProps<Option, IsMulti, Group>>(
+        key: Key,
+        props: StylesProps<Option, IsMulti, Group>[Key],
+      ) => CSSObjectWithLabel
+      getValue: () => Options<Option>
+      hasValue: boolean
+      isMulti: IsMulti
+      isRtl: boolean
+      options: OptionsOrGroups<Option, Group>
+      selectOption: (newValue: Option) => void
+      selectProps: Readonly<Props<Option, IsMulti, Group>> &
+        Readonly<{
+          children?: React.ReactNode
+        }>
+      setValue: (
+        newValue: OnChangeValue<Option, IsMulti>,
+        action: SetValueAction,
+        option?: Option | undefined,
+      ) => void
+      theme: Theme
+    }
+    getOptionLabel: (data: Option) => string
+    getOptionValue: (data: Option) => string
+    getStyles: <Key extends keyof StylesProps<Option, IsMulti, Group>>(
+      key: Key,
+      props: StylesProps<Option, IsMulti, Group>[Key],
+    ) => CSSObjectWithLabel
+    getElementId: (
+      element:
+        | 'group'
+        | 'input'
+        | 'listbox'
+        | 'option'
+        | 'placeholder'
+        | 'live-region',
+    ) => string
+    buildCategorizedOptions: () => CategorizedGroupOrOption<Option, Group>[]
+    getCategorizedOptions: () => CategorizedGroupOrOption<Option, Group>[]
+    buildFocusableOptions: () => Option[]
+    getFocusableOptions: () => Option[]
+    ariaOnChange: (
+      value: OnChangeValue<Option, IsMulti>,
+      actionMeta: ActionMeta<Option>,
+    ) => void
+    hasValue(): boolean
+    hasOptions(): boolean
+    isClearable(): boolean
+    isOptionDisabled(option: Option, selectValue: Options<Option>): boolean
+    isOptionSelected(option: Option, selectValue: Options<Option>): boolean
+    filterOption(
+      option: FilterOptionOption<Option>,
+      inputValue: string,
+    ): boolean
+    formatOptionLabel(
+      data: Option,
+      context: FormatOptionLabelContext,
+    ): ReactNode
+    formatGroupLabel(data: Group): React.ReactNode
+    onMenuMouseDown: MouseEventHandler<HTMLDivElement>
+    onMenuMouseMove: MouseEventHandler<HTMLDivElement>
+    onControlMouseDown: (
+      event:
+        | React.MouseEvent<HTMLDivElement>
+        | React.TouchEvent<HTMLDivElement>,
+    ) => void
+    onDropdownIndicatorMouseDown: (
+      event:
+        | React.MouseEvent<HTMLDivElement>
+        | React.TouchEvent<HTMLDivElement>,
+    ) => void
+    onClearIndicatorMouseDown: (
+      event:
+        | React.MouseEvent<HTMLDivElement>
+        | React.TouchEvent<HTMLDivElement>,
+    ) => void
+    onScroll: (event: Event) => void
+    startListeningComposition(): void
+    stopListeningComposition(): void
+    onCompositionStart: () => void
+    onCompositionEnd: () => void
+    startListeningToTouch(): void
+    stopListeningToTouch(): void
+    onTouchStart: ({ touches }: TouchEvent) => void
+    onTouchMove: ({ touches }: TouchEvent) => void
+    onTouchEnd: (event: TouchEvent) => void
+    onControlTouchEnd: TouchEventHandler<HTMLDivElement>
+    onClearIndicatorTouchEnd: TouchEventHandler<HTMLDivElement>
+    onDropdownIndicatorTouchEnd: TouchEventHandler<HTMLDivElement>
+    handleInputChange: FormEventHandler<HTMLInputElement>
+    onInputFocus: FocusEventHandler<HTMLInputElement>
+    onInputBlur: FocusEventHandler<HTMLInputElement>
+    onOptionHover: (focusedOption: Option) => void
+    shouldHideSelectedOptions: () => boolean | IsMulti
+    onKeyDown: KeyboardEventHandler<HTMLDivElement>
+    renderInput(): JSX.Element
+    renderPlaceholderOrValue(): JSX.Element | JSX.Element[] | null
+    renderClearIndicator(): JSX.Element | null
+    renderLoadingIndicator(): JSX.Element | null
+    renderIndicatorSeparator(): JSX.Element | null
+    renderDropdownIndicator(): JSX.Element | null
+    renderMenu(): JSX.Element | null
+    renderFormField(): JSX.Element | undefined
+    renderLiveRegion(): JSX.Element
+  }
+>
 
 export const SelectComponent = React.memo(
   ({
     active,
-    rowData,
+    readonly,
+    disabled,
+    cellData,
     setCellData,
     focus,
     stopEditing,
     columnData,
-  }: CellProps<string | null, SelectOptions>) => {
+  }: CellProps<string | null, any, SelectOptions>) => {
+    const renderDisabled = useMemo(() => {
+      return readonly || disabled || columnData.disabled
+    }, [readonly, disabled, columnData.disabled])
     const ref = useRef<SelectRef<Choice, false, GroupBase<Choice>>>(null)
 
     const asyncRef = useRef({
       focusedAt: 0,
-      escPressed: false
+      escPressed: false,
     })
 
     asyncRef.current = {
@@ -198,7 +284,10 @@ export const SelectComponent = React.memo(
         asyncRef.current.escPressed = false
         asyncRef.current.focusedAt = Date.now()
       } else {
-        if (Date.now() - asyncRef.current.focusedAt > 60 || ref.current?.state.isFocused) {
+        if (
+          Date.now() - asyncRef.current.focusedAt > 60 ||
+          ref.current?.state.isFocused
+        ) {
           ref.current?.blur()
         }
       }
@@ -206,7 +295,7 @@ export const SelectComponent = React.memo(
 
     return (
       <Select
-        ref={(ref as any)}
+        ref={ref as any}
         styles={{
           container: (provided) => ({
             ...provided,
@@ -234,12 +323,14 @@ export const SelectComponent = React.memo(
             opacity: active ? 1 : 0,
           }),
         }}
-        isDisabled={columnData.disabled}
+        isDisabled={renderDisabled}
         value={
-          columnData.choices.find(({ value }) => value === rowData) ?? null
+          columnData.choices.find(({ value }) => value === cellData) ?? null
         }
         menuPortalTarget={document.body}
-        menuIsOpen={focus}
+        className='dsg-select'
+        classNamePrefix='dsg'
+        menuIsOpen={focus && !renderDisabled}
         onChange={(data) => {
           setCellData(data?.value ?? null)
           setTimeout(stopEditing, 0)
@@ -248,11 +339,11 @@ export const SelectComponent = React.memo(
         options={columnData.choices}
       />
     )
-  }
+  },
 )
 
 export const selectColumn = (
-  options: SelectOptions
+  options: SelectOptions,
 ): Partial<Column<string | null, SelectOptions, string>> => ({
   component: SelectComponent as any,
   columnData: options,
@@ -265,4 +356,3 @@ export const selectColumn = (
   pasteValue: ({ value }) =>
     options.choices.find((choice) => choice.label === value)?.value ?? null,
 })
-

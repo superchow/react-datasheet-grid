@@ -1,8 +1,13 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { Align, CellComponent, CellProps, Column, TextColumnOptions } from '../types'
 import cx from 'classnames'
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFirstRender } from '../hooks/useFirstRender'
-
+import {
+  Align,
+  CellComponent,
+  CellProps,
+  Column,
+  TextColumnOptions,
+} from '../types'
 
 type TextColumnData<T> = {
   placeholder?: string
@@ -14,12 +19,12 @@ type TextColumnData<T> = {
 }
 
 const TextComponent = React.memo<
-  CellProps<string | null, TextColumnData<string | null>>
+  CellProps<string | null, any, TextColumnData<string | null>>
 >(
   ({
     active,
     focus,
-    rowData,
+    cellData,
     align: cellAlign,
     setCellData,
     readonly,
@@ -39,7 +44,7 @@ const TextComponent = React.memo<
 
     // We create refs for async access so we don't have to add it to the useEffect dependencies
     const asyncRef = useRef({
-      rowData,
+      cellData,
       formatInputOnFocus,
       formatBlurredInput,
       setCellData,
@@ -48,7 +53,7 @@ const TextComponent = React.memo<
       firstRender,
       // Timestamp of last focus (when focus becomes true) and last change (input change)
       // used to prevent un-necessary updates when value was not changed
-      value: rowData,
+      value: cellData,
       focusedAt: 0,
       changedAt: 0,
       // This allows us to keep track of whether or not the user blurred the input using the Esc key
@@ -56,7 +61,7 @@ const TextComponent = React.memo<
       escPressed: false,
     })
     asyncRef.current = {
-      rowData,
+      cellData,
       formatInputOnFocus,
       formatBlurredInput,
       setCellData,
@@ -85,12 +90,13 @@ const TextComponent = React.memo<
         if (ref.current) {
           // Make sure to first format the input
           ref.current.value = asyncRef.current.formatInputOnFocus(
-            asyncRef.current.rowData
+            asyncRef.current.cellData,
           )
-          // When the status is selected, click again to deselect and move the cursor to the end of the text
+          // 选中状态时，再次点击将取消选中并移动光标到文字末尾
           if (ref.current === document.activeElement) {
             const len = ref.current.value?.length || 0
-            ref.current.setSelectionRange && ref.current.setSelectionRange(len, len)
+            ref.current.setSelectionRange &&
+              ref.current.setSelectionRange(len, len)
           } else {
             ref.current.focus()
             ref.current.select()
@@ -115,17 +121,17 @@ const TextComponent = React.memo<
             asyncRef.current.changedAt >= asyncRef.current.focusedAt
           ) {
             asyncRef.current.setCellData(
-              asyncRef.current.parseUserInput(ref.current.value)
+              asyncRef.current.parseUserInput(ref.current.value),
             )
           }
-          // Repair immediate out of focus after clicking
+          // 修复点击后立即失焦
           if (Date.now() - asyncRef.current.focusedAt > 60) {
             ref.current.blur()
           }
         } else {
           // fix Safari do not fire bulr event
           asyncRef.current.setCellData(
-            asyncRef.current.parseUserInput(asyncRef.current.value || '')
+            asyncRef.current.parseUserInput(asyncRef.current.value || ''),
           )
         }
       }
@@ -137,18 +143,42 @@ const TextComponent = React.memo<
       }
       if (!focus && ref.current) {
         // On blur or when the data changes, format it for display
-        ref.current.value = asyncRef.current.formatBlurredInput(rowData)
+        ref.current.value = asyncRef.current.formatBlurredInput(cellData)
       }
-    }, [focus, rowData, isStatic])
+    }, [focus, cellData, isStatic, ref.current])
 
+    useEffect(() => {
+      if (isStatic) {
+        // 修复更改后的值input无法正确触发onBlur事件导致值不更新的bug
+        const value = asyncRef.current.formatInputOnFocus(
+          asyncRef.current.cellData,
+        )
+        if ((asyncRef.current.value || '') !== value) {
+          asyncRef.current.setCellData(
+            asyncRef.current.parseUserInput(asyncRef.current.value || ''),
+          )
+        }
+      }
+    }, [asyncRef, isStatic])
 
-    return isStatic ? <div className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`, formatBlurredInput(rowData) ? null : 'dsg-input-empty')} dsg-input-placeholder={placeholder}>
-      <span>{formatBlurredInput(rowData)}</span>
-    </div> : (
+    return isStatic ? (
+      <div
+        className={cx(
+          'dsg-input',
+          renderAlign && `dsg-input-align-${renderAlign}`,
+          formatBlurredInput(cellData) ? null : 'dsg-input-empty',
+        )}
+        dsg-input-placeholder={placeholder}>
+        <span>{formatBlurredInput(cellData)}</span>
+      </div>
+    ) : (
       <input
         // We use an uncontrolled component for better performance
-        defaultValue={formatBlurredInput(rowData)}
-        className={cx('dsg-input', renderAlign && `dsg-input-align-${renderAlign}`)}
+        defaultValue={formatBlurredInput(cellData)}
+        className={cx(
+          'dsg-input',
+          renderAlign && `dsg-input-align-${renderAlign}`,
+        )}
         placeholder={active ? placeholder : undefined}
         // Important to prevent any undesired "tabbing"
         tabIndex={-1}
@@ -168,14 +198,21 @@ const TextComponent = React.memo<
           }
         }}
         onKeyDown={(e) => {
+          const input = e.target as HTMLInputElement
           // Track when user presses the Esc key
           if (e.key === 'Escape') {
             asyncRef.current.escPressed = true
           }
+          if (e.key === 'Tab' || e.key === 'Escape') {
+            // 修复Tab事件未触发更新实际值的bug
+            asyncRef.current.value = input.value
+            asyncRef.current.changedAt = Date.now()
+            setCellData(parseUserInput(input.value))
+          }
         }}
       />
     )
-  }
+  },
 )
 
 TextComponent.displayName = 'TextComponent'
@@ -186,8 +223,8 @@ export function createTextColumn<T = string | null>({
   placeholder,
   align,
   continuousUpdates = true,
-  deletedValue = null as unknown as T,
-  parseUserInput = (value) => (value?.trim() || null) as unknown as T,
+  deletedValue = (null as unknown) as T,
+  parseUserInput = (value) => ((value?.trim() || null) as unknown) as T,
   formatBlurredInput = (value) => String(value ?? ''),
   formatInputOnFocus = (value) => String(value ?? ''),
   formatForCopy = (value) => String(value ?? ''),
@@ -195,7 +232,11 @@ export function createTextColumn<T = string | null>({
     (value.replace(/[\n\r]+/g, ' ').trim() || (null as unknown)) as T,
 }: TextColumnOptions<T> = {}): Partial<Column<T, TextColumnData<T>, string>> {
   return {
-    component: TextComponent as unknown as CellComponent<T, TextColumnData<T>>,
+    component: (TextComponent as unknown) as CellComponent<
+      T,
+      any,
+      TextColumnData<T>
+    >,
     columnData: {
       placeholder,
       align,

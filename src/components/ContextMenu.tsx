@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
-import {
-  Menu,
-  Item,
-  useContextMenu
-} from "react-contexify";
 import cx from 'classnames'
-import operationTypes, { DELETE_COLS, DELETE_ROWS, DUPLICATE_ROWS } from '../constant'
+import React, { useEffect, useMemo } from 'react'
+import { Item, Menu, useContextMenu } from 'react-contexify'
+import 'react-contexify/dist/ReactContexify.css'
+import operationTypes, {
+  DELETE_COLS,
+  DELETE_ROWS,
+  DUPLICATE_ROWS,
+} from '../constant'
 import { ContextMenuComponentProps, ContextMenuItem } from '../types'
-
 
 const renderItem = (item: ContextMenuItem) => {
   if (operationTypes[item.type]) {
@@ -41,44 +41,70 @@ const renderItem = (item: ContextMenuItem) => {
   return item.type
 }
 
+const emptyRefinement = (array: ContextMenuItem[]) => array
+
 export const ContextMenu = ({
   id,
   event,
   clientX,
   clientY,
+  cursorIndex,
+  selection,
   items,
+  menusRefinement = emptyRefinement,
   onShown,
-  onHidden
+  onHidden,
 }: ContextMenuComponentProps) => {
-
   const { show, hideAll } = useContextMenu({
-    id
-  });
+    id,
+  })
 
   useEffect(() => {
     if (event) {
       const x = clientX || event.clientX
       const y = clientY || event.clientY
-      show(event, {
+      show({
+        event,
         position: {
           x,
-          y
-        }
+          y,
+        },
       })
     } else {
       hideAll()
     }
   }, [id, event, clientX, clientY])
 
-  return <Menu 
-    id={id}
-    className={cx('dsg-context-menu', `dsg-menu-${id}`)} 
-    animation={{ exit: false, enter: false }}
-    onShown={onShown}
-    onHidden={onHidden}
-  >
-    {items.map(it => (<Item key={it.type} className="dsg-context-menu-item" onClick={it.action}>{renderItem(it)}</Item>))}
-  </Menu>
+  const renderItems = useMemo(() => {
+    return menusRefinement(items, cursorIndex, selection)
+  }, [items, cursorIndex, selection, menusRefinement])
+
+  return renderItems.length ? (
+    <Menu
+      id={id}
+      className={cx('dsg-context-menu', `dsg-menu-${id}`)}
+      animation={{ exit: false, enter: false }}
+      onVisibilityChange={(isVisible) => {
+        if (!isVisible) {
+          onHidden && onHidden()
+        } else {
+          onShown && onShown()
+        }
+      }}
+    >
+      {renderItems.map((it) => (
+        <Item
+          key={it.type}
+          className="dsg-context-menu-item"
+          onClick={it.action}
+        >
+          {renderItem(it)}
+        </Item>
+      ))}
+    </Menu>
+  ) : (
+    <></>
+  )
 }
 
 export default ContextMenu

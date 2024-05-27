@@ -1,8 +1,8 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import { CellComponent, CellProps, Column } from '../types'
 
-const DateComponent = React.memo<CellProps<Date | null, any>>(
-  ({ focus, active, rowData, setCellData }) => {
+const DateComponent = React.memo<CellProps<Date | null, any, any>>(
+  ({ focus, active, cellData, setCellData }) => {
     const ref = useRef<HTMLInputElement>(null)
 
     // This is the same trick as in `textColumn`
@@ -25,10 +25,10 @@ const DateComponent = React.memo<CellProps<Date | null, any>>(
         // Only show the calendar symbol on non-empty cells, or when cell is active, otherwise set opacity to 0
         style={{
           pointerEvents: focus ? 'auto' : 'none',
-          opacity: rowData || active ? undefined : 0,
+          opacity: cellData || active ? undefined : 0,
         }}
         // Because rowData is a Date object and we need a string, we use toISOString...
-        value={rowData?.toISOString().substr(0, 10) ?? ''}
+        value={cellData?.toISOString().substr(0, 10) ?? ''}
         // ...and the input returns a string that should be converted into a Date object
         onChange={(e) => {
           const date = new Date(e.target.value)
@@ -42,7 +42,7 @@ const DateComponent = React.memo<CellProps<Date | null, any>>(
 DateComponent.displayName = 'DateComponent'
 
 export const dateColumn: Partial<Column<Date | null, any, string>> = {
-  component: DateComponent as CellComponent<Date | null, any>,
+  component: DateComponent as unknown as CellComponent<Date | null, any, any>,
   deleteValue: () => null,
   // We convert the date to a string for copying using toISOString
   copyValue: ({ rowData }) =>

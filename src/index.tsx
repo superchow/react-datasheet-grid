@@ -15,8 +15,8 @@ import { StaticDataSheetGrid as StaticDataSheetGridBase } from './components/Sta
 export type Column<T = any, C = any, PasteValue = string> = Partial<
   ColumnBase<T, C, PasteValue>
 >
-export type CellComponent<T = any, C = any> = CellComponentBase<T, C>
-export type CellProps<T = any, C = any> = CellPropsBase<T, C>
+export type CellComponent<U, T = any, C = any> = CellComponentBase<U, T, C>
+export type CellProps<U, T = any, C = any> = CellPropsBase<U, T, C>
 export type DataSheetGridProps<T = any> = DataSheetGridPropsBase<T>
 export type AddRowsComponentProps = AddRowsComponentPropsBase
 export type SimpleColumn<T = any, C = any> = SimpleColumnBase<T, C>

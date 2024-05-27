@@ -1,7 +1,7 @@
-import React from "react";
-import { WorkSheet } from "xlsx";
+import React from 'react'
+import { WorkSheet } from 'xlsx'
 
-export type ColumnWidth = string | number;
+export type ColumnWidth = string | number
 
 export type DataSheetRow = {
   rowspan?: {
@@ -14,35 +14,40 @@ export type DataSheetRow = {
 }
 
 export type Cell = {
-  col: number;
-  row: number;
-};
+  col: number
+  row: number
+}
 
-export type Align = "left" | "center" | "right";
+export type Align = 'left' | 'center' | 'right'
 
-export type Selection = { min: Cell; max: Cell };
+export type Selection = { min: Cell; max: Cell }
 
-export type CellProps<T, C> = {
-  originalRowData: T;
-  rowData: T;
-  rowIndex: number;
-  columnIndex: number;
-  active: boolean;
-  focus: boolean;
-  align?: Align;
-  disabled: boolean;
-  readonly: boolean;
-  columnData: C;
-  setRowData: (rowData: DataSheetRow) => void;
-  setCellData: (cellData: any) => void;
-  stopEditing: (opts?: { nextRow: boolean }) => void;
-  insertRowBelow: () => void;
-  duplicateRow: () => void;
-  deleteRow: () => void;
-  getContextMenuItems: () => ContextMenuItem[];
-};
+export type CellProps<U, T, C> = {
+  originalRowData: T
+  cellData: U
+  rowIndex: number
+  columnKey: string
+  columnIndex: number
+  active: boolean
+  focus: boolean
+  align?: Align
+  disabled: boolean
+  readonly: boolean
+  columnData: C
+  setRowData: (rowData: T) => void
+  setCellData: (cellData: U) => void
+  stopEditing: (opts?: { nextRow: boolean }) => void
+  insertRowBelow: () => void
+  duplicateRow: () => void
+  deleteRow: () => void
+  getContextMenuItems: () => ContextMenuItem[]
+}
 
-export type CellComponent<T, C> = (props: CellProps<T, C> & Record<string, any>) => JSX.Element;
+export type CellComponent<U, T, C> = (
+  props: Omit<CellProps<U, T, C>, 'originalRowData' | 'cellData'> & {
+    rowData: T
+  } & Record<string, any>,
+) => JSX.Element
 
 export type ColumnType = 's' | 'n' | 'd' | 'f' | 'b' | 'o'
 
@@ -65,284 +70,297 @@ export type TextColumnOptions<T> = {
   parsePastedValue?: (value: string) => T
 }
 
-export type KeyColumnData<K, C, P> = { key: string; original: Partial<Column<K, C, P>> }
+export type KeyColumnData<K, C, P> = {
+  key: string
+  original: Partial<Column<K, C, P>>
+}
 
 // TODO
-export type RenderTitleProps<T extends string|number|boolean = any> = {
-  id: string|undefined
-  title?: T;
-  setColumnData: (str: string) => void;
+export type RenderTitleProps<T extends string | number | boolean = any> = {
+  id: string | undefined
+  title?: T
+  setColumnData: (str: string) => void
   setEditCol: (value: number) => void
-  focused?: boolean;
+  focused?: boolean
 } & Partial<TextColumnOptions<string>>
-export type RenderTitle<T extends string|number|boolean = any> = (props: RenderTitleProps<T>) => React.ReactNode;
+export type RenderTitle<T extends string | number | boolean = any> = (
+  props: RenderTitleProps<T>,
+) => React.ReactNode
 
-export type Column<T, C, PasteValue, U = any> = {
-  id?: string;
-  headerClassName?: string;
-  title?: React.ReactNode;
-  renderTitle?: RenderTitle;
-  width: ColumnWidth;
-  minWidth: number;
-  maxWidth?: number;
+export type Column<T, C, PasteValue, U = any, P = any> = {
+  id?: string
+  headerClassName?: string
+  title?: React.ReactNode
+  renderTitle?: RenderTitle
+  width: ColumnWidth
+  minWidth: number
+  maxWidth?: number
   /** @todo */
-  hideWhenColspanZero?: boolean | ((data: T, rowIndex: number) => boolean);
-  colspan?: number | ((data: T, rowIndex: number) => number);
+  hideWhenColspanZero?: boolean | ((data: T, rowIndex: number) => boolean)
+  colspan?: number | ((data: T, rowIndex: number) => number)
   /** support rowspan, default is true */
-  supportRowspan?: boolean;
-  rowspan?: number | ((data: T, rowIndex: number) => number);
-  align?: Align;
-  renderWhenScrolling: boolean;
-  component: CellComponent<T, C>;
-  columnType?: ColumnType;
-  columnData?: C;
+  supportRowspan?: boolean
+  rowspan?: number | ((data: T, rowIndex: number) => number)
+  align?: Align
+  renderWhenScrolling: boolean
+  component: CellComponent<P, T, C>
+  columnType?: ColumnType
+  columnData?: C
   // refuse keycode
-  disableKeys: boolean;
+  disableKeys: boolean
+  /** 禁止头部编辑 */
+  disableHeadEditable?: boolean
   /** disable ColumnOperation */
-  disableColumnOperation?: boolean;
-  disableColumnOperationBefore?: boolean;
-  disableColumnOperationAfter?: boolean;
+  disableColumnOperation?: boolean | Array<'INSERT_COL_BEFORE' | 'INSERT_COL_AFTER' | 'DELETE_COL'>
   /** disable Column's rowspanOperation */
-  disableRowOperation?: boolean;
-  disabled: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
-  readonly?: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean);
+  disableRowOperation?: boolean
+  disabled: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean)
+  readonly?: boolean | ((opt: { rowData: T; rowIndex: number }) => boolean)
   cellClassName?:
     | string
-    | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
-  keepFocus: boolean;
-  deleteValue: (opt: { rowData: T; rowIndex: number }) => T;
-  copyValue: (opt: { rowData: T; rowIndex: number }) => number | string | null;
-  pasteValue: (opt: { rowData: T; value: PasteValue; rowIndex: number }) => T;
-  prePasteValues: (values: string[]) => PasteValue[] | Promise<PasteValue[]>;
-  isCellEmpty: (opt: { rowData: T; rowIndex: number }) => boolean;
+    | ((opt: { rowData: T; rowIndex: number }) => string | undefined)
+  keepFocus: boolean
+  deleteValue: (opt: { rowData: T; rowIndex: number }) => T
+  copyValue: (opt: { rowData: T; rowIndex: number }) => any
+  pasteValue: (opt: { rowData: T; value: PasteValue; rowIndex: number }) => T
+  prePasteValues: (values: string[]) => PasteValue[] | Promise<PasteValue[]>
+  isCellEmpty: (opt: { rowData: T; rowIndex: number }) => boolean
   getContainer?: string | HTMLElement | (() => HTMLElement)
   [k: `config-${string}`]: U
-};
+}
 
 export type ListItemData<T extends DataSheetRow> = {
-  data: T[];
-  contentWidth?: number;
-  columns: Column<T, any, string>[];
-  hasStickyRightColumn: boolean;
-  activeCell: Cell | null;
-  selectionMinRow?: number;
-  selectionMaxRow?: number;
-  editing: boolean;
-  setRowData: (rowIndex: number, item: T) => void;
-  setRowsData: (startRowIndex: number, items: T[]) => void;
-  deleteRows: (rowMin: number, rowMax?: number) => void;
-  duplicateRows: (rowMin: number, rowMax?: number) => void;
-  insertRowAfter: (row: number, count?: number) => void;
-  stopEditing?: (opts?: { nextRow?: boolean }) => void;
-  getContextMenuItems: () => ContextMenuItem[];
-  supportRowspan?: boolean;
+  /** 原始数据 */
+  orginSheetData: T[]
+  /** 包装数据 */
+  data: T[]
+  contentWidth?: number
+  columns: Column<T, any, string>[]
+  hasStickyRightColumn: boolean
+  activeCell: Cell | null
+  selectionMinRow?: number
+  selectionMaxRow?: number
+  editing: boolean
+  setRowData: (rowIndex: number, item: T) => void
+  setRowsData: (startRowIndex: number, items: T[]) => void
+  deleteRows: (rowMin: number, rowMax?: number) => void
+  duplicateRows: (rowMin: number, rowMax?: number) => void
+  insertRowAfter: (row: number, count?: number) => void
+  stopEditing?: (opts?: { nextRow?: boolean }) => void
+  getContextMenuItems: () => ContextMenuItem[]
+  supportRowspan?: boolean
   /** @todo */
-  supportColspan?: boolean;
+  supportColspan?: boolean
   rowClassName?:
     | string
-    | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
-};
+    | ((opt: { rowData: T; rowIndex: number }) => string | undefined)
+}
 
 export type HeaderContextType<T> = {
-  columns: Column<T, any, string>[];
-  contentWidth?: number;
-  hasStickyRightColumn: boolean;
-  height: number;
-  activeColMin?: number;
-  activeColMax?: number;
-  editingCol: number;
+  columns: Column<T, any, string>[]
+  contentWidth?: number
+  hasStickyRightColumn: boolean
+  height: number
+  activeColMin?: number
+  activeColMax?: number
+  editingCol: number
   setEditCol: (val: number) => void
   setColumns: (
     columns: Partial<Column<T, any, any>>[],
-    operation: ColumnOperation
-  ) => void;
-};
+    operation: ColumnOperation,
+  ) => void
+}
 
 export type RectType = {
-  height: number;
-  width: number;
-  left: number;
-  top: number;
-};
+  height: number
+  width: number
+  left: number
+  top: number
+}
 
 export type SelectionContextType = {
-  showSelection: boolean;
-  columnRights?: number[];
-  columnWidths?: number[];
-  columnRowTops?: number[];
-  columnRowHeights?: number[];
-  activeCell: Cell | null;
-  selection: Selection | null;
-  dataLength: number;
-  rowHeight: number;
-  hasStickyRightColumn: boolean;
-  editing: boolean;
-  isCellDisabled: (cell: Cell) => boolean;
-  isCellReadonly: (cell: Cell) => boolean;
-  getActiveCellRowData: (
-    cell: Cell
-  ) => {
-    rowData: any;
-    colIndex: number;
-    rowIndex: number;
-  };
-  getActiveCellBoundingClientRect: () => DOMRect | undefined;
-  getActiveCellRect: () => RectType | undefined;
-  headerRowHeight: number;
-  viewWidth?: number;
-  viewHeight?: number;
-  contentWidth?: number;
-  contentHeight?: number;
-  edges: { top: boolean; right: boolean; bottom: boolean; left: boolean };
-  expandSelection: number | null;
-};
+  showSelection: boolean
+  columnRights?: number[]
+  columnWidths?: number[]
+  columnRowTops?: number[]
+  columnRowHeights?: number[]
+  activeCell: Cell | null
+  selection: Selection | null
+  dataLength: number
+  rowHeight: number
+  hasStickyRightColumn: boolean
+  editing: boolean
+  isCellDisabled: (cell: Cell) => boolean
+  isCellReadonly: (cell: Cell) => boolean
+  getActiveCellRowData: (cell: Cell) => {
+    rowData: any
+    colIndex: number
+    rowIndex: number
+  }
+  getActiveCellBoundingClientRect: () => DOMRect | undefined
+  getActiveCellRect: () => RectType | undefined
+  headerRowHeight: number
+  viewWidth?: number
+  viewHeight?: number
+  contentWidth?: number
+  contentHeight?: number
+  edges: { top: boolean; right: boolean; bottom: boolean; left: boolean }
+  expandSelection: number | null
+}
 
-export type RowProps<T extends DataSheetRow> = Omit<ListItemData<T>, 'data'|'activeCell'> & {
-  index: number;
-  data: T;
-  style: React.CSSProperties;
-  isScrolling?: boolean;
-  active: boolean;
-  activeColIndex: number | null;
-};
+export type RowProps<T extends DataSheetRow> = Omit<
+  ListItemData<T>,
+  'data' | 'activeCell'
+> & {
+  index: number
+  record: T
+  style: React.CSSProperties
+  isScrolling?: boolean
+  active: boolean
+  activeColIndex: number | null
+}
 
-export type SimpleColumn<T, C> = Partial<
-  Pick<
-    Column<T, C, string>,
-    "title" | "maxWidth" | "minWidth" | "width" | "component" | "columnData"
-  >
->;
+export type SimpleColumn<T, C> = Partial<Column<T, C, string>>
 
 export type AddRowsComponentProps = {
-  addRows: (count?: number) => void;
-};
+  addRows: (count?: number) => void
+}
 
 export type ContextMenuItem =
   | {
       type:
-        | "INSERT_COL_BEFORE"
-        | "INSERT_COL_AFTER"
+        | 'INSERT_COL_BEFORE'
+        | 'INSERT_COL_AFTER'
         | 'DELETE_COL'
-        | "INSERT_ROW_ABOVE"
-        | "INSERT_ROW_BELLOW"
-        | "DELETE_ROW"
-        | "DUPLICATE_ROW";
-      action: () => void;
+        | 'INSERT_ROW_ABOVE'
+        | 'INSERT_ROW_BELLOW'
+        | 'DELETE_ROW'
+        | 'DUPLICATE_ROW'
+      action: () => void
     }
   | {
-      type: 
-        | "DELETE_ROWS" 
-        | "DUPLICATE_ROWS"
-        | 'MERGE_ROWS'
-        | 'CLEAR_MERGE_ROWS';
-      action: () => void;
-      fromRow: number;
-      toRow: number;
+      type: 'DELETE_ROWS' | 'DUPLICATE_ROWS' | 'MERGE_ROWS' | 'CLEAR_MERGE_ROWS'
+      action: () => void
+      fromRow: number
+      toRow: number
     }
   | {
-    type: 'DELETE_COLS'
-    action: () => void;
-    fromCol: number;
-    toCol: number;
-  }
+      type: 'DELETE_COLS'
+      action: () => void
+      fromCol: number
+      toCol: number
+    }
 
 export type ContextMenuComponentProps = {
-  id: string | number;
-  event?: MouseEvent;
-  clientX?: number;
-  clientY?: number;
-  cursorIndex?: Cell;
-  items: ContextMenuItem[];
-  onShown?: () => void;
-  onHidden?: () => void;
-};
+  id: string | number
+  event?: MouseEvent
+  clientX?: number
+  clientY?: number
+  cursorIndex?: Cell
+  selection?: Selection | null
+  items: ContextMenuItem[]
+  menusRefinement?: ContextMenuPasteHandle
+  onShown?: () => void
+  onHidden?: () => void
+}
+
+export interface ContextMenuPasteHandle {
+  (
+    array: ContextMenuItem[],
+    cursorIndex?: Cell,
+    selection?: Selection | null,
+  ): ContextMenuItem[]
+}
 
 export type Operation = {
-  type: "UPDATE" | "DELETE" | "CREATE";
-  fromRowIndex: number;
-  toRowIndex: number;
-};
+  type: 'UPDATE' | 'DELETE' | 'CREATE'
+  fromRowIndex: number
+  toRowIndex: number
+}
 export type ColumnOperation = {
-  type: "DELETE" | "CREATE" | "UPDATE";
-  fromColIndex: number;
-  toColIndex: number;
-};
+  type: 'DELETE' | 'CREATE' | 'UPDATE'
+  fromColIndex: number
+  toColIndex: number
+}
 
 export type DataSheetGridProps<T> = {
-  id?: number | string;
-  value?: T[];
-  style?: React.CSSProperties;
-  className?: string;
+  id?: number | string
+  value?: T[]
+  style?: React.CSSProperties
+  className?: string
   rowClassName?:
     | string
-    | ((opt: { rowData: T; rowIndex: number }) => string | undefined);
-  supportRowspan?: boolean;
+    | ((opt: { rowData: T; rowIndex: number }) => string | undefined)
+  supportRowspan?: boolean
   /** @todo */
-  supportColspan?: boolean;
-  onChange?: (value: T[], operations: Operation[]) => void;
+  supportColspan?: boolean
+  onChange?: (value: T[], operations: Operation[]) => void
   /** @default true */
-  lockColumns?: boolean;
+  lockColumns?: boolean
   createCol?: (
     operation: ColumnOperation,
-    sequence?: number
-  ) => Partial<Column<T, any, any>>;
-  columns?: Partial<Column<T, any, any>>[];
+    sequence?: number,
+  ) => Partial<Column<T, any, any>>
+  columns?: Partial<Column<T, any, any>>[]
   onColumnsChange?: (
     columns: Partial<Column<T, any, any>>[],
-    operation: ColumnOperation
-  ) => void;
-  gutterColumn?: SimpleColumn<T, any> | false;
-  stickyRightColumn?: SimpleColumn<T, any>;
-  widthModel?: 'full';
-  height?: number;
-  rowHeight?: number;
+    operation: ColumnOperation,
+  ) => void
+  gutterColumn?: SimpleColumn<T, any> | false
+  stickyRightColumn?: SimpleColumn<T, any>
+  widthModel?: 'full'
+  height?: number
+  rowHeight?: number
   /** Head editable
    * @default false
    */
-  headerEditable?: boolean;
-  headerRowHeight?: number;
+  headerEditable?: boolean
+  headerRowHeight?: number
   rowKey?: string | ((rowData: T, index: number, data: T[]) => string)
-  addRowsComponent?: (props: AddRowsComponentProps) => JSX.Element;
-  createRow?: () => T;
-  duplicateRow?: (opts: { rowData: T; rowIndex: number }) => T;
-  autoAddRow?: boolean;
-  autoAddColumn?: boolean;
+  addRowsComponent?: (props: AddRowsComponentProps) => JSX.Element
+  createRow?: () => T
+  duplicateRow?: (opts: { rowData: T; rowIndex: number }) => T
+  autoAddRow?: boolean
+  autoAddColumn?: boolean
   /** @default false */
-  lockRows?: boolean;
-  showAddRows?: boolean;
-  disableContextMenu?: boolean;
-  disableExpandSelection?: boolean;
-  contextMenuComponent?: (props: ContextMenuComponentProps) => JSX.Element;
-  onFocus?: (opts: { cell: CellWithId }) => void;
-  onBlur?: (opts: { cell: CellWithId }) => void;
-  onActiveCellChange?: (opts: { cell: CellWithId | null }) => void;
-  onSelectionChange?: (opts: { selection: SelectionWithId | null }) => void;
-  showSelection?: boolean;
-  [key: `data-${string}`]: string;
-};
+  lockRows?: boolean
+  showAddRows?: boolean
+  addRowsPostion?: 'top' | 'bottom'
+  disableContextMenu?: boolean
+  /** 外部处理 contextMenus 列表 */
+  contextMenusPaster?: ContextMenuPasteHandle
+  disableExpandSelection?: boolean
+  contextMenuComponent?: (props: ContextMenuComponentProps) => JSX.Element
+  onFocus?: (opts: { cell: CellWithId }) => void
+  onBlur?: (opts: { cell: CellWithId }) => void
+  onActiveCellChange?: (opts: { cell: CellWithId | null }) => void
+  onSelectionChange?: (opts: { selection: SelectionWithId | null }) => void
+  showSelection?: boolean
+  [key: `data-${string}`]: string
+}
 
 type CellWithIdInput = {
-  col: number | string;
-  row: number;
-};
+  col: number | string
+  row: number
+}
 
-type SelectionWithIdInput = { min: CellWithIdInput; max: CellWithIdInput };
+type SelectionWithIdInput = { min: CellWithIdInput; max: CellWithIdInput }
 
 export type CellWithId = {
-  colId?: string;
-  col: number;
-  row: number;
-};
+  colId?: string
+  col: number
+  row: number
+}
 
-export type SelectionWithId = { min: CellWithId; max: CellWithId };
+export type SelectionWithId = { min: CellWithId; max: CellWithId }
 
 export type DataSheetGridRef = {
-  activeCell: CellWithId | null;
-  selection: SelectionWithId | null;
-  setActiveCell: (activeCell: CellWithIdInput | null) => void;
-  setSelection: (selection: SelectionWithIdInput | null) => void;
-  target: HTMLDivElement | null;
+  activeCell: CellWithId | null
+  selection: SelectionWithId | null
+  setActiveCell: (activeCell: CellWithIdInput | null) => void
+  setSelection: (selection: SelectionWithIdInput | null) => void
+  target: HTMLDivElement | null
   getTable: () => HTMLTableElement | undefined
   getSheet: () => WorkSheet | undefined
-  getTableData: () => Record<string|number, any>[] | null
-};
+  getTableData: () => Record<string | number, any>[] | null
+}

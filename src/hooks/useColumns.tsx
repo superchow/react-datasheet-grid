@@ -1,15 +1,23 @@
 import React, { useMemo } from 'react'
-import { CellProps, Column, SimpleColumn } from '../types'
+import { CellComponent, Column, SimpleColumn } from '../types'
 
 const defaultComponent = () => <></>
 const defaultIsCellEmpty = () => false
 const identityRow = <T extends any>({ rowData }: { rowData: T }) => rowData
 const defaultCopyValue = () => null
-const defaultGutterComponent = ({ rowIndex }: CellProps<any, any>) => (
+const defaultGutterComponent: CellComponent<any, any, any> = ({ rowIndex }) => (
   <>{rowIndex + 1}</>
 )
 const cellAlwaysEmpty = () => true
 const defaultPrePasteValues = (values: string[]) => values
+
+const gutterColumnDefault: SimpleColumn<any, any> = {
+  disableColumnOperation: true,
+  disableKeys: true,
+  disableHeadEditable: true,
+  isCellEmpty: cellAlwaysEmpty,
+  component: defaultGutterComponent,
+}
 
 export const useColumns = <T extends any>(
   columns: Partial<Column<T, any, any>>[],
@@ -17,18 +25,18 @@ export const useColumns = <T extends any>(
   stickyRightColumn?: SimpleColumn<T, any>
 ): Column<T, any, any>[] => {
   return useMemo<Column<T, any, any>[]>(() => {
-
     const partialColumns: Partial<Column<T, any, any>>[] = [
-      gutterColumn === false
+      (gutterColumn === false
         ? {
+            ...gutterColumnDefault,
             width: 0,
             minWidth: 0,
             component: () => <></>,
             headerClassName: 'dsg-hidden-cell',
             cellClassName: 'dsg-hidden-cell',
-            isCellEmpty: cellAlwaysEmpty,
           }
         : {
+            ...gutterColumnDefault,
             ...gutterColumn,
             width: gutterColumn?.width ?? '0 0 40px',
             minWidth: gutterColumn?.minWidth ?? 0,
@@ -36,8 +44,7 @@ export const useColumns = <T extends any>(
               <div className="dsg-corner-indicator" />
             ),
             component: gutterColumn?.component ?? defaultGutterComponent,
-            isCellEmpty: cellAlwaysEmpty,
-          },
+          }) as Partial<Column<T, any, any>>,
       ...columns,
     ]
 
